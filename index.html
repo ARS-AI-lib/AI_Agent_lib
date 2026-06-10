@@ -359,6 +359,7 @@ function parseAgentSheet(rows){
 // ── STATE ──
 let UCS=[],AGENTS=[];
 let vSDLC=false,vHasAgent=false,vView='by-team',vStage='all',vType='all',vSearch='';
+let vAbility='all',vTeam='all',vRole='all';
 
 // Agents filtered by current search query (used by all 3 pages)
 const visAgents=()=>vSearch
@@ -504,6 +505,9 @@ function esc(s){return(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function uniq(a){return[...new Set(a.filter(Boolean))];}
 const tOk=a=>{
   if(vType!=='all'&&a.type!==vType) return false;
+  if(vAbility!=='all'&&(a.ability||'')!==vAbility) return false;
+  if(vTeam!=='all'&&(a.team||'')!==vTeam) return false;
+  if(vRole!=='all'&&(a.role||'')!==vRole) return false;
   if(vSearch){const q=vSearch.toLowerCase();return (a.name||'').toLowerCase().includes(q)||(a.team||'').toLowerCase().includes(q);}
   return true;
 };
@@ -540,17 +544,24 @@ function buildCtrl(){
   if(!curViews.find(v=>v[0]===vView)) vView=vSDLC?'by-stage':'by-team';
   const stages=['all',...SO]; // always show all SDLC stages
   const dd=(id,opts,val,onch,lbl)=>`<div class="cg"><span class="cl">${lbl}</span><select class="dd" id="${id}" onchange="${onch}">${opts.map(o=>`<option value="${esc(Array.isArray(o)?o[0]:o)}" ${val===(Array.isArray(o)?o[0]:o)?'selected':''}>${Array.isArray(o)?o[1]:(o==='all'?'All':o)}</option>`).join('')}</select></div>`;
+  
+  // Build dynamic options from current AGENTS data
+  const abilityOpts=[['all','All'],...uniq(AGENTS.map(a=>a.ability).filter(Boolean)).sort().map(v=>[v,v])];
+  const teamOpts=[['all','All'],...uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort().map(v=>[v,v])];
+  const roleOpts=[['all','All'],...uniq(AGENTS.map(a=>a.role).filter(Boolean)).sort().map(v=>[v,v])];
+
   let h=`<button class="pill ${vSDLC?'on':''}" onclick="toggleSDLC()">SDLC</button><div class="csep"></div>`;
   h+=dd('ddv',curViews,vView,"setView(this.value)",'VIEW');
+  h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderLib()",'TYPE');
+  h+='<div class="csep"></div>'+dd('dda',abilityOpts,vAbility,"vAbility=this.value;renderLib()",'ABILITY');
+  h+='<div class="csep"></div>'+dd('ddteam',teamOpts,vTeam,"vTeam=this.value;renderLib()",'TEAM');
+  h+='<div class="csep"></div>'+dd('ddr',roleOpts,vRole,"vRole=this.value;renderLib()",'ROLE');
   if(vSDLC){
     h+='<div class="csep"></div>'+dd('dds',stages,vStage,"vStage=this.value;renderLib()",'STAGE');
-    h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderLib()",'TYPE');
     // Has agent only meaningful for UC card views
     if(vView==='by-stage'||vView==='by-process'){
       h+='<div class="csep"></div>'+`<button class="pill ${vHasAgent?'on':''}" onclick="vHasAgent=!vHasAgent;renderAll()">Has agent</button>`;
     }
-  } else {
-    h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderLib()",'TYPE');
   }
   h+='<button class="btnclr" title="Clear filters" onclick="clearF()">✕</button>';
   document.getElementById('cbar').innerHTML=h;
@@ -567,7 +578,7 @@ function setView(v){
   if(v!=='by-stage'&&v!=='by-process') vHasAgent=false;
   renderAll();
 }
-function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vStage='all';vType='all';vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
+function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vStage='all';vType='all';vAbility='all';vTeam='all';vRole='all';vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
 function renderAll(){
   buildCtrl();updateStats();renderLib();
   if(curPage==='adopt') renderAdopt();
