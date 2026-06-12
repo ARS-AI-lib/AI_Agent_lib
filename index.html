@@ -507,7 +507,7 @@ const tOk=a=>{
   if(vType!=='all'&&a.type!==vType) return false;
   if(vAbility!=='all'&&(a.ability||'')!==vAbility) return false;
   if(vTeam!=='all'&&(a.team||'')!==vTeam) return false;
-  if(vRole!=='all'&&(a.role||'')!==vRole) return false;
+  if(vRole!=='all'){const roles=(a.role||'').split(/[,\/]/).map(r=>r.trim());if(!roles.includes(vRole)) return false;}
   if(vSearch){const q=vSearch.toLowerCase();return (a.name||'').toLowerCase().includes(q)||(a.team||'').toLowerCase().includes(q);}
   return true;
 };
@@ -548,7 +548,7 @@ function buildCtrl(){
   // Build dynamic options from current AGENTS data
   const abilityOpts=[['all','All'],...uniq(AGENTS.map(a=>a.ability).filter(Boolean)).sort().map(v=>[v,v])];
   const teamOpts=[['all','All'],...uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort().map(v=>[v,v])];
-  const roleOpts=[['all','All'],...uniq(AGENTS.map(a=>a.role).filter(Boolean)).sort().map(v=>[v,v])];
+  const roleOpts=[['all','All'],...uniq(AGENTS.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort().map(v=>[v,v])];
 
   let h=`<button class="pill ${vSDLC?'on':''}" onclick="toggleSDLC()">SDLC</button><div class="csep"></div>`;
   h+=dd('ddv',curViews,vView,"setView(this.value)",'VIEW');
