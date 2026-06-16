@@ -49,13 +49,24 @@ nav{background:var(--sf);border-bottom:2px solid var(--bd);display:flex;align-it
 
 /* CONTROLS */
 .cbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:6px 24px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-.cg{display:flex;align-items:center;gap:4px}
+.cg{display:flex;align-items:center;gap:4px;position:relative}
 .cl{font-size:10px;font-weight:700;color:var(--mu);letter-spacing:.05em;white-space:nowrap}
 select.dd{padding:4px 20px 4px 8px;border-radius:6px;border:1.5px solid var(--bd2);background:var(--sf2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a85a3'/%3E%3C/svg%3E") no-repeat right 6px center;appearance:none;font-family:'IBM Plex Sans Thai',sans-serif;font-size:11.5px;color:var(--tx2);cursor:pointer;outline:none;min-width:105px}
 select.dd:focus{border-color:var(--ag)}
 .btnclr{width:22px;height:22px;border-radius:5px;border:1px solid #fca5a5;background:#fff5f5;color:#b91c1c;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s}
 .btnclr:hover{background:#b91c1c;color:#fff}
 .csep{width:1px;height:16px;background:var(--bd)}
+/* multi-select dropdown */
+.ms-wrap{position:relative;display:inline-block}
+.ms-btn{padding:4px 22px 4px 8px;border-radius:6px;border:1.5px solid var(--bd2);background:var(--sf2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a85a3'/%3E%3C/svg%3E") no-repeat right 6px center;font-family:'IBM Plex Sans Thai',sans-serif;font-size:11.5px;color:var(--tx2);cursor:pointer;outline:none;min-width:110px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.ms-btn.active{border-color:var(--ag);background-color:var(--sf2)}
+.ms-btn.has-sel{border-color:var(--uc);color:var(--uc);font-weight:600}
+.ms-list{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--sf);border:1.5px solid var(--bd2);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:160px;max-height:240px;overflow-y:auto;padding:4px 0}
+.ms-list.open{display:block}
+.ms-item{display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap}
+.ms-item:hover{background:var(--sf2)}
+.ms-item input[type=checkbox]{accent-color:var(--uc);cursor:pointer;width:13px;height:13px}
+.ms-item.checked{color:var(--uc);font-weight:600}
 .pill{padding:4px 11px;border-radius:20px;border:1.5px solid var(--bd2);background:var(--sf2);color:var(--tx2);font-size:11.5px;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;transition:all .18s;white-space:nowrap}
 .pill.on{background:var(--uc);border-color:var(--uc);color:#fff;font-weight:600}
 .pill:not(.on):hover{border-color:var(--uc);color:var(--uc)}
@@ -359,7 +370,7 @@ function parseAgentSheet(rows){
 // ── STATE ──
 let UCS=[],AGENTS=[];
 let vSDLC=false,vHasAgent=false,vView='by-team',vStage='all',vType='all',vSearch='';
-let vAbility='all',vTeam='all',vRole='all';
+let vAbility=new Set(),vTeam=new Set(),vRole=new Set();
 
 // Agents filtered by current search query (used by all 3 pages)
 const visAgents=()=>vSearch
@@ -505,9 +516,9 @@ function esc(s){return(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function uniq(a){return[...new Set(a.filter(Boolean))];}
 const tOk=a=>{
   if(vType!=='all'&&a.type!==vType) return false;
-  if(vAbility!=='all'&&(a.ability||'')!==vAbility) return false;
-  if(vTeam!=='all'&&(a.team||'')!==vTeam) return false;
-  if(vRole!=='all'){const roles=(a.role||'').split(/[,\/]/).map(r=>r.trim());if(!roles.includes(vRole)) return false;}
+  if(vAbility.size>0&&!vAbility.has(a.ability||'')) return false;
+  if(vTeam.size>0&&!vTeam.has(a.team||'')) return false;
+  if(vRole.size>0){const roles=(a.role||'').split(/[,\/]/).map(r=>r.trim());if(!roles.some(r=>vRole.has(r))) return false;}
   if(vSearch){const q=vSearch.toLowerCase();return (a.name||'').toLowerCase().includes(q)||(a.team||'').toLowerCase().includes(q);}
   return true;
 };
@@ -536,29 +547,71 @@ function switchTab(t){
   if(t==='adopt') renderAdopt();
 }
 
+// ── MULTI-SELECT HELPER ──
+function msLabel(set,placeholder){
+  if(set.size===0) return placeholder;
+  if(set.size===1) return [...set][0];
+  return `${[...set][0]} +${set.size-1}`;
+}
+function msHtml(id,opts,set,label){
+  const btn=`<button class="ms-btn ${set.size>0?'has-sel':''}" onclick="msToggle('${id}')" id="ms-btn-${id}">${msLabel(set,label)}</button>`;
+  const items=opts.map(v=>{
+    const checked=set.has(v);
+    return `<label class="ms-item ${checked?'checked':''}"><input type="checkbox" ${checked?'checked':''} onchange="msChange('${id}','${esc(v)}',this.checked)">${esc(v)}</label>`;
+  }).join('');
+  return `<div class="ms-wrap" id="ms-wrap-${id}"><div class="ms-list" id="ms-list-${id}">${items}</div>${btn}</div>`;
+}
+function msToggle(id){
+  // Close all other open dropdowns first
+  document.querySelectorAll('.ms-list.open').forEach(el=>{if(el.id!=='ms-list-'+id)el.classList.remove('open');});
+  document.getElementById('ms-list-'+id).classList.toggle('open');
+}
+function msChange(id,val,checked){
+  const map={ability:vAbility,team:vTeam,role:vRole};
+  const set=map[id];
+  if(checked) set.add(val); else set.delete(val);
+  // Update button label + styling without full rebuild
+  const btn=document.getElementById('ms-btn-'+id);
+  if(btn){
+    const labels={ability:'Ability',team:'Team',role:'Role'};
+    btn.textContent=msLabel(set,labels[id]);
+    btn.className='ms-btn'+(set.size>0?' has-sel':'');
+  }
+  // Re-render items checked state
+  document.querySelectorAll(`#ms-list-${id} .ms-item`).forEach(el=>{
+    const cb=el.querySelector('input');
+    if(cb){el.classList.toggle('checked',cb.checked);}
+  });
+  renderLib();
+}
+// Close dropdown on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.ms-wrap'))
+    document.querySelectorAll('.ms-list.open').forEach(el=>el.classList.remove('open'));
+});
+
 // ── LIBRARY CONTROLS ──
 function buildCtrl(){
   const agViews=[['by-team','By Team'],['by-role','By Role'],['by-ability','By Ability']];
   const ucViews=[['by-stage','By Stage'],['by-process','By Process'],['by-team','By Team'],['by-role','By Role'],['by-ability','By Ability']];
   const curViews=vSDLC?ucViews:agViews;
   if(!curViews.find(v=>v[0]===vView)) vView=vSDLC?'by-stage':'by-team';
-  const stages=['all',...SO]; // always show all SDLC stages
+  const stages=['all',...SO];
   const dd=(id,opts,val,onch,lbl)=>`<div class="cg"><span class="cl">${lbl}</span><select class="dd" id="${id}" onchange="${onch}">${opts.map(o=>`<option value="${esc(Array.isArray(o)?o[0]:o)}" ${val===(Array.isArray(o)?o[0]:o)?'selected':''}>${Array.isArray(o)?o[1]:(o==='all'?'All':o)}</option>`).join('')}</select></div>`;
-  
+
   // Build dynamic options from current AGENTS data
-  const abilityOpts=[['all','All'],...uniq(AGENTS.map(a=>a.ability).filter(Boolean)).sort().map(v=>[v,v])];
-  const teamOpts=[['all','All'],...uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort().map(v=>[v,v])];
-  const roleOpts=[['all','All'],...uniq(AGENTS.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort().map(v=>[v,v])];
+  const abilityOpts=uniq(AGENTS.map(a=>a.ability).filter(Boolean)).sort();
+  const teamOpts=uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort();
+  const roleOpts=uniq(AGENTS.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort();
 
   let h=`<button class="pill ${vSDLC?'on':''}" onclick="toggleSDLC()">SDLC</button><div class="csep"></div>`;
   h+=dd('ddv',curViews,vView,"setView(this.value)",'VIEW');
   h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderLib()",'TYPE');
-  h+='<div class="csep"></div>'+dd('dda',abilityOpts,vAbility,"vAbility=this.value;renderLib()",'ABILITY');
-  h+='<div class="csep"></div>'+dd('ddteam',teamOpts,vTeam,"vTeam=this.value;renderLib()",'TEAM');
-  h+='<div class="csep"></div>'+dd('ddr',roleOpts,vRole,"vRole=this.value;renderLib()",'ROLE');
+  h+='<div class="csep"></div><div class="cg"><span class="cl">ABILITY</span>'+msHtml('ability',abilityOpts,vAbility,'Ability')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">TEAM</span>'+msHtml('team',teamOpts,vTeam,'Team')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">ROLE</span>'+msHtml('role',roleOpts,vRole,'Role')+'</div>';
   if(vSDLC){
     h+='<div class="csep"></div>'+dd('dds',stages,vStage,"vStage=this.value;renderLib()",'STAGE');
-    // Has agent only meaningful for UC card views
     if(vView==='by-stage'||vView==='by-process'){
       h+='<div class="csep"></div>'+`<button class="pill ${vHasAgent?'on':''}" onclick="vHasAgent=!vHasAgent;renderAll()">Has agent</button>`;
     }
@@ -578,7 +631,7 @@ function setView(v){
   if(v!=='by-stage'&&v!=='by-process') vHasAgent=false;
   renderAll();
 }
-function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vStage='all';vType='all';vAbility='all';vTeam='all';vRole='all';vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
+function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vStage='all';vType='all';vAbility=new Set();vTeam=new Set();vRole=new Set();vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
 function renderAll(){
   buildCtrl();updateStats();renderLib();
   if(curPage==='adopt') renderAdopt();
