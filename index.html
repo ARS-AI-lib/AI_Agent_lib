@@ -81,6 +81,8 @@ select.dd:focus{border-color:var(--ag)}
 .sname{font-size:15px;font-weight:700}
 .sbadge{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);color:var(--mu);font-family:'IBM Plex Mono',monospace}
 .scov{margin-left:auto;font-size:11px;color:var(--mu)}
+.orph-row{margin-top:14px;padding-top:12px;border-top:1px dashed var(--bd)}
+.orph-lbl{font-size:11px;font-weight:700;color:#d97706;margin-bottom:8px;padding-left:2px}
 .scov strong{font-family:'IBM Plex Mono',monospace}
 
 /* UC CARDS */
@@ -763,8 +765,14 @@ function renderByDim(dim){
     const all=ucs.length,cov=ucs.filter(u=>getAgs(u).length>0).length;
     if(vHasAgent) ucs=ucs.filter(u=>getAgs(u).length>0); // only filter when Has agent ON
     const cards=ucs.map(u=>renderCard(u)).join('');
-    if(!cards.trim()) return '';
-    return `<div class="sb"><div class="sh"><div class="sbar" style="background:${g.color}"></div><span class="sname" style="color:${g.color}">${g.label}</span><span class="sbadge">${all} UC</span><span class="scov">Covered: <strong style="color:${g.color}">${cov}/${all}</strong> (${pct(cov,all)}%)</span></div><div class="grid">${cards}</div></div>`;
+    // Orphan agents: SDLC agents that match the current filters (Team/Role/Ability/search/type) and
+    // belong to this stage, but have no usecase mapping at all — they can never appear inside a UC
+    // card above, so without this they'd silently vanish even though they match the active filters
+    // (and are still counted in the top-bar counters / status legend).
+    const orphPool=dim==='stage'?AGENTS.filter(a=>isOrph(a)&&tOk(a)&&a.stage===g.key):[];
+    const orphCards=orphPool.length?`<div class="orph-row"><div class="orph-lbl">Not linked to a use case (${orphPool.length})</div><div class="agrid">${orphPool.map(a=>renderAC(a,true)).join('')}</div></div>`:'';
+    if(!cards.trim()&&!orphCards.trim()) return '';
+    return `<div class="sb"><div class="sh"><div class="sbar" style="background:${g.color}"></div><span class="sname" style="color:${g.color}">${g.label}</span><span class="sbadge">${all} UC</span><span class="scov">Covered: <strong style="color:${g.color}">${cov}/${all}</strong> (${pct(cov,all)}%)</span></div><div class="grid">${cards}</div>${orphCards}</div>`;
   }).join('');
 }
 
