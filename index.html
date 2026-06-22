@@ -185,6 +185,11 @@ select.dd:focus{border-color:var(--ag)}
 .adopt-subcol:last-child{border-right:none}
 .adopt-sub-hdr{text-align:center;font-weight:700;font-size:10px;padding:7px 6px;letter-spacing:.04em;white-space:nowrap}
 .adopt-cards{padding:6px;display:flex;flex-direction:column;gap:5px;background:var(--bg);flex:1}
+/* Multi-column variant: several narrow mini-columns (grouped by process-number prefix) sit
+   side-by-side under ONE shared sub-header — matches the reference layout for DESIGN/BUILD/TEST. */
+.adopt-cards-multi{flex-direction:row;align-items:stretch;gap:0;padding:6px 0}
+.adopt-minicol{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;padding:0 6px;border-right:1px dashed var(--bd)}
+.adopt-minicol:last-child{border-right:none}
 .aproc{padding:8px 9px;border-radius:7px;cursor:pointer;transition:all .15s;border:1.5px solid}
 .aproc:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.13)}
 .aproc.ns{background:#fff;border-color:#e5e7eb}
@@ -507,7 +512,7 @@ function agentProcessIds(a){
 function hasProcessId(a,procId){
   return agentProcessIds(a).includes(procId);
 }
-function getAgs(uc){return AGENTS.filter(a=>{
+function getAgs(uc){return visAgents().filter(a=>{
   if(!isSdlcAg(a)) return false; // only SDLC agents shown on UC cards
   if(!a.ucName) return false;
   if(a.ucName.trim().toLowerCase()!==uc.name.trim().toLowerCase()) return false;
@@ -1158,36 +1163,26 @@ const ADOPT_GROUPS=[
     ]},
   ]},
   {label:'Development',color:'#1a2e50',sub:[
-    {label:'DESIGN',color:'#6d28d9',bg:'#6d28d915',stage:'Design',procs:[
-      {id:'3.1',name:'User Experience Research'},{id:'4.1',name:'High-level Design'},
-      {id:'5.1',name:'Data Insight & Analysis'},{id:'6.1',name:'Ideation & Planning'},
-      {id:'7.1',name:'Detailed User Story Development'},{id:'8.1',name:'User Interface Design (Hi-fi)'},
-      {id:'9.1',name:'Detailed Design'},
-      {id:'3.2',name:'User Journey Design'},{id:'4.2',name:'Effort Estimation'},
-      {id:'D.DRG',name:'Data Requirement Gathering'},{id:'6.2',name:'Project Governance'},
-      {id:'7.2',name:'Development Support'},{id:'8.2',name:'Copywriting'},
-      {id:'3.3',name:'User Interface Design (Low-fi)'},
-      {id:'7.3',name:'Test Support'},
-      {id:'7.4',name:'Deployment Support'},
-      {id:'D.DO',name:'DevOps'},
+    {label:'DESIGN',color:'#6d28d9',bg:'#6d28d915',stage:'Design',cols:[
+      [{id:'3.1',name:'User Experience Research'},{id:'3.2',name:'User Journey Design'},{id:'3.3',name:'User Interface Design (Low-fi)'}],
+      [{id:'4.1',name:'High-level Design'},{id:'4.2',name:'Effort Estimation'}],
+      [{id:'5.1',name:'Data Insight & Analysis'},{id:'D.DRG',name:'Data Requirement Gathering'}],
+      [{id:'6.1',name:'Ideation & Planning'},{id:'6.2',name:'Project Governance'}],
+      [{id:'7.1',name:'Detailed User Story Development'},{id:'7.2',name:'Development Support'},{id:'7.3',name:'Test Support'},{id:'7.4',name:'Deployment Support'}],
+      [{id:'8.1',name:'User Interface Design (Hi-fi)'},{id:'8.2',name:'Copywriting'}],
+      [{id:'9.1',name:'Detailed Design'},{id:'D.DO',name:'DevOps'}],
     ]},
-    {label:'BUILD',color:'#0b7a68',bg:'#0b7a6815',stage:'Build',procs:[
-      {id:'10.1',name:'Development'},{id:'B.NFR',name:'NFR Gathering'},
-      {id:'B.PSD',name:'Penetration Test Scenario Development'},{id:'B.EP',name:'Environment Provisioning'},
-      {id:'B.DD',name:'Data Development'},
-      {id:'10.2',name:'Unit Test'},{id:'B.PTS',name:'Performance Test Scripting'},
-      {id:'B.PTE',name:'Penetration Test Execution'},{id:'B.CD',name:'CI/CD Pipeline Development'},
-      {id:'B.DTS',name:'Data Test Support'},
-      {id:'10.3',name:'Code Review'},{id:'B.PTX',name:'Performance Test Execution'},
-      {id:'B.PTR',name:'Penetration Test Report'},
-      {id:'10.4',name:'Test Support'},
+    {label:'BUILD',color:'#0b7a68',bg:'#0b7a6815',stage:'Build',cols:[
+      [{id:'10.1',name:'Development'},{id:'10.2',name:'Unit Test'},{id:'10.3',name:'Code Review'},{id:'10.4',name:'Test Support'}],
+      [{id:'B.NFR',name:'NFR Gathering'},{id:'B.PTS',name:'Performance Test Scripting'},{id:'B.PTX',name:'Performance Test Execution'}],
+      [{id:'B.PSD',name:'Penetration Test Scenario Development'},{id:'B.PTE',name:'Penetration Test Execution'},{id:'B.PTR',name:'Penetration Test Report'}],
+      [{id:'B.EP',name:'Environment Provisioning'},{id:'B.CD',name:'CI/CD Pipeline Development'}],
+      [{id:'B.DD',name:'Data Development'},{id:'B.DTS',name:'Data Test Support'}],
     ]},
-    {label:'TEST',color:'#92400e',bg:'#92400e12',stage:'Test',procs:[
-      {id:'11.1',name:'Test Approach'},{id:'12.1',name:'SIT Test Data Preparation'},
-      {id:'13.1',name:'UAT Test Data Preparation'},
-      {id:'11.2',name:'Test Case Development'},{id:'12.2',name:'SIT Test Execution'},
-      {id:'13.2',name:'UAT Test Execution'},
-      {id:'11.3',name:'Defect Management'},
+    {label:'TEST',color:'#92400e',bg:'#92400e12',stage:'Test',cols:[
+      [{id:'11.1',name:'Test Approach'},{id:'11.2',name:'Test Case Development'},{id:'11.3',name:'Defect Management'}],
+      [{id:'12.1',name:'SIT Test Data Preparation'},{id:'12.2',name:'SIT Test Execution'}],
+      [{id:'13.1',name:'UAT Test Data Preparation'},{id:'13.2',name:'UAT Test Execution'}],
     ]},
     {label:'DEPLOYMENT',color:'#991b1b',bg:'#991b1b12',stage:'Deployment',procs:[
       {id:'14.1',name:'Runbook Development'},{id:'14.2A',name:'IVT Test Case Development'},
@@ -1252,52 +1247,59 @@ function renderAdopt(){
   if(titleSub) titleSub.textContent='AI Adoption status across SDLC processes';
 
   // Render board
+  // Renders a single process card's HTML (and tells caller whether it was hidden by Has-agent filter)
+  function renderProcCard(proc){
+    const ags=visAgents().filter(a=>hasProcessId(a,proc.id));
+    if(vHasAgent&&!ags.length) return '';
+    const statuses=getAgentStatuses(proc.id);
+
+    const statusArray=[
+      {status:'ru',count:statuses.ru,label:'Ready'},
+      {status:'pilot',count:statuses.pilot,label:'Pilot'},
+      {status:'ip',count:statuses.ip,label:'In Progress'},
+      {status:'td',count:statuses.td,label:'To Do'},
+      {status:'ns',count:statuses.ns,label:'Not Start'}
+    ];
+    const dominant=statusArray.reduce((a,b)=>a.count>b.count?a:b);
+    const dominantStatus=dominant.count>0?dominant.status:'ns';
+    const empty=!ags.length;
+
+    // Accent bar: ONLY when dominant status is exactly 'ns' (Not Start) but the card actually has
+    // agents (some of which are further along). Bar is always a fixed dark-gray — it signals
+    // "this card isn't really empty" without implying a specific status color.
+    // Cards with NO agents at all stay fully plain (no accent).
+    const hasProgress=!empty&&dominantStatus==='ns';
+    const cardClass=`${dominantStatus}${hasProgress?' has-progress':''}${empty?' empty':''}`;
+
+    const breakdown=statusArray.filter(s=>s.count>0).map(s=>`${s.count} ${s.label}`).join(', ');
+    const icon={ns:'○',td:'◦',ip:'●',pilot:'◆',ru:'✓'};
+
+    return `<div class="aproc ${cardClass}" onclick="adoptClick('${proc.id}','${esc(proc.name)}')">
+      <div class="aproc-num">${proc.id}</div>
+      <div class="aproc-name">${proc.name}</div>
+      <div class="aproc-count">${empty?'<span style="color:#9ca3af">No agents</span>':icon[dominantStatus]+' '+breakdown}</div>
+    </div>`;
+  }
+
   board.innerHTML=ADOPT_GROUPS.map(grp=>{
     const grpCols=grp.sub.length;
     const subcols=grp.sub.map(sub=>{
-      const cards=sub.procs.map(proc=>{
-        const ags=visAgents().filter(a=>hasProcessId(a,proc.id));
-        // Has-agent filter: skip empty process cards
-        if(vHasAgent&&!ags.length) return '';
-        const statuses=getAgentStatuses(proc.id);
-
-        // Find dominant status (most agents)
-        const statusArray=[
-          {status:'ru',count:statuses.ru,label:'Ready'},
-          {status:'pilot',count:statuses.pilot,label:'Pilot'},
-          {status:'ip',count:statuses.ip,label:'In Progress'},
-          {status:'td',count:statuses.td,label:'To Do'},
-          {status:'ns',count:statuses.ns,label:'Not Start'}
-        ];
-        const dominant=statusArray.reduce((a,b)=>a.count>b.count?a:b);
-        const dominantStatus=dominant.count>0?dominant.status:'ns';
-        const empty=!ags.length;
-
-        // Accent bar: ONLY when dominant status is exactly 'ns' (Not Start) but the card actually has
-        // agents (some of which are further along). Bar is always a fixed dark-gray — it signals
-        // "this card isn't really empty" without implying a specific status color.
-        // Cards with NO agents at all stay fully plain (no accent).
-        const hasProgress=!empty&&dominantStatus==='ns';
-        const cardClass=`${dominantStatus}${hasProgress?' has-progress':''}${empty?' empty':''}`;
-
-        // Build breakdown text (only non-zero statuses)
-        const breakdown=statusArray.filter(s=>s.count>0).map(s=>`${s.count} ${s.label}`).join(', ');
-        const icon={ns:'○',td:'◦',ip:'●',pilot:'◆',ru:'✓'};
-
-        return `<div class="aproc ${cardClass}" onclick="adoptClick('${proc.id}','${esc(proc.name)}')">
-          <div class="aproc-num">${proc.id}</div>
-          <div class="aproc-name">${proc.name}</div>
-          <div class="aproc-count">${empty?'<span style="color:#9ca3af">No agents</span>':icon[dominantStatus]+' '+breakdown}</div>
-        </div>`;
-      }).join('');
-      // Hide subcolumn entirely if has-agent filter removed all its cards
-      if(vHasAgent&&!cards.trim()) return '';
+      // sub.cols = multiple mini-columns sharing ONE header band (matches reference layout for DESIGN/BUILD/TEST)
+      // sub.procs = single flat column (used by INITIATION/DISCOVERY/DEPLOYMENT/POST DEVELOPMENT)
+      const miniCols=sub.cols||[sub.procs];
+      const renderedMiniCols=miniCols.map(colProcs=>{
+        const cards=colProcs.map(renderProcCard).join('');
+        if(vHasAgent&&!cards.trim()) return null; // whole mini-column empty after filter
+        return `<div class="adopt-minicol">${cards}</div>`;
+      }).filter(Boolean);
+      if(vHasAgent&&!renderedMiniCols.length) return '';
       const subHdr = grp.merged
         ? `<div class="adopt-grp-hdr" style="min-height:70.5px;display:flex;align-items:center;justify-content:center;writing-mode:horizontal-tb">${sub.label}</div>`
         : `<div class="adopt-sub-hdr" style="background:${sub.bg};color:${sub.color};border-bottom:2px solid ${sub.color}40">${sub.label}</div>`;
-      return `<div class="adopt-subcol" style="flex:1;min-width:120px">
+      const isMulti=!!sub.cols;
+      return `<div class="adopt-subcol" style="flex:${isMulti?miniCols.length:1};min-width:${isMulti?miniCols.length*120:120}px">
         ${subHdr}
-        <div class="adopt-cards">${cards}</div>
+        <div class="adopt-cards${isMulti?' adopt-cards-multi':''}">${renderedMiniCols.join('')}</div>
       </div>`;
     }).join('');
     if(vHasAgent&&!subcols.trim()) return '';
