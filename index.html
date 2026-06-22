@@ -500,12 +500,21 @@ function loadFallback(){
 
 // ── HELPERS ──
 const isSdlcAg=a=>!!(a.stage&&a.stage.trim()); // non-empty SDLC Stage = is SDLC agent
+// SDLC Process Mapping can now contain multiple comma-separated values, e.g. "10.1 Development,10.3 Code Review"
+// Returns array of process-ID prefixes (e.g. ["10.1","10.3"])
+function agentProcessIds(a){
+  if(!a.ucProcess) return [];
+  return a.ucProcess.split(',').map(p=>p.trim().split(' ')[0]).filter(Boolean);
+}
+function hasProcessId(a,procId){
+  return agentProcessIds(a).includes(procId);
+}
 function getAgs(uc){return AGENTS.filter(a=>{
   if(!isSdlcAg(a)) return false; // only SDLC agents shown on UC cards
   if(!a.ucName) return false;
   if(a.ucName.trim().toLowerCase()!==uc.name.trim().toLowerCase()) return false;
   if(!a.ucProcess||!uc.process) return true;
-  return a.ucProcess.trim().split(' ')[0]===uc.process.trim().split(' ')[0];
+  return hasProcessId(a,uc.process.trim().split(' ')[0]);
 });}
 const isOrph=a=>isSdlcAg(a)&&(!a.ucName||!a.ucName.trim()); // SDLC agent with no UC mapping
 const pc=p=>p>=70?'pfh':p>=30?'pfm':'pfl';
@@ -854,8 +863,12 @@ function drawTL(){
   const wrap=cv.parentElement;
   const W=Math.max(wrap.clientWidth||860,700),tw=W-TL_LW-TL_PAD;
   const H=TL_HH+TL_AH+vis.length*TL_RH;
-  cv.width=W;cv.height=H;cv.style.width=W+'px';cv.style.height=H+'px';
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H);
+  const DPR=window.devicePixelRatio||1;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(DPR,0,0,DPR,0,0); // scale drawing ops to match backing-store resolution
+  ctx.clearRect(0,0,W,H);
   const dx=d=>tlX(d,tw),tx=dx(TODAY);
 
   // month header
@@ -1108,7 +1121,7 @@ const ADOPT_GROUPS=[
 ];
 
 function getAgentStatuses(procId){
-  const ags=visAgents().filter(a=>a.ucProcess&&a.ucProcess.trim().split(' ')[0]===procId);
+  const ags=visAgents().filter(a=>hasProcessId(a,procId));
   const statuses={ns:0,td:0,ip:0,pilot:0,ru:0};
   ags.forEach(a=>{
     if((a.phase||'').toLowerCase()==='production'&&a.progress>=100) statuses.ru++;
@@ -1120,7 +1133,7 @@ function getAgentStatuses(procId){
 }
 
 function adoptStatus(procId){
-  const ags=visAgents().filter(a=>a.ucProcess&&a.ucProcess.trim().split(' ')[0]===procId);
+  const ags=visAgents().filter(a=>hasProcessId(a,procId));
   if(!ags.length) return 'ns';
   const isReady=ags.some(a=>
     (a.phase||'').toLowerCase()==='production'&&
@@ -1168,7 +1181,7 @@ function renderAdopt(){
     const grpCols=grp.sub.length;
     const subcols=grp.sub.map(sub=>{
       const cards=sub.procs.map(proc=>{
-        const ags=visAgents().filter(a=>a.ucProcess&&a.ucProcess.trim().split(' ')[0]===proc.id);
+        const ags=visAgents().filter(a=>hasProcessId(a,proc.id));
         const statuses=getAgentStatuses(proc.id);
         
         // Find dominant status (most agents)
@@ -1219,7 +1232,7 @@ function renderAdopt(){
 }
 
 function adoptClick(procId,procName){
-  const ags=visAgents().filter(a=>a.ucProcess&&a.ucProcess.trim().split(' ')[0]===procId);
+  const ags=visAgents().filter(a=>hasProcessId(a,procId));
   if(!ags.length){showToast(`No ${vSearch?'matching ':''}agents for ${procId} ${procName}`,'i');return;}
   openAgentsModal(ags,null,`${procId} — ${procName}`);
 }
