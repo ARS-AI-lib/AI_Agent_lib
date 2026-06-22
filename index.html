@@ -31,7 +31,7 @@ nav{background:var(--sf);border-bottom:2px solid var(--bd);display:flex;align-it
 .chip{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:5px 11px;text-align:center;min-width:54px}
 .chip .n{font-size:17px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1.1}
 .chip .l{font-size:9px;color:var(--mu);margin-top:1px;white-space:nowrap}
-.c-uc .n{color:var(--cd)}.c-cov .n{color:var(--uc)}.c-ag .n{color:var(--ag)}.c-sk .n{color:var(--sk)}
+.c-uc .n{color:var(--cd)}.c-ag .n{color:var(--ag)}.c-sk .n{color:var(--sk)}
 .btnref{width:28px;height:28px;border-radius:6px;border:1px solid var(--bd2);background:var(--sf2);color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .btnref:hover{border-color:var(--ag);color:var(--ag)}
 .btnref.loading svg{animation:spin .8s linear infinite}
@@ -189,10 +189,14 @@ select.dd:focus{border-color:var(--ag)}
 .aproc:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.13)}
 .aproc.ns{background:#fff;border-color:#e5e7eb}
 .aproc.td{background:#edf2f9;border-color:#b0c4de}
-.aproc.td.has-progress{box-shadow:inset 3px 0 0 #4a6fa5}
 .aproc.ip{background:#fffbeb;border-color:#fcd34d;box-shadow:inset 3px 0 0 #f5a623}
 .aproc.pilot{background:#f4f6e5;border-color:#c5d06a;box-shadow:inset 3px 0 0 #8ea82a}
 .aproc.ru{background:#f0fdf4;border-color:#6ee7b7;box-shadow:inset 3px 0 0 #15803d}
+/* Accent bar: dominant status is 'ns' (Not Start by count) but the card actually has agents —
+   a fixed dark-gray left bar signals "not really empty", without implying a specific status color. */
+.aproc.ns.has-progress{box-shadow:inset 3px 0 0 #4b5563}
+/* Truly empty (zero agents) cards stay plain — never get an accent bar */
+.aproc.empty{background:#fff;border-color:#e5e7eb;box-shadow:none}
 .aproc-num{font-weight:700;font-size:11px;font-family:'IBM Plex Mono',monospace;margin-bottom:2px}
 .aproc.ns .aproc-num{color:#9ca3af}.aproc.td .aproc-num{color:#4a6fa5}
 .aproc.ip .aproc-num{color:#b45309}.aproc.ru .aproc-num{color:#15803d}
@@ -230,10 +234,9 @@ select.dd:focus{border-color:var(--ag)}
   </div>
   <div class="nav-r">
     <div class="chips">
-      <div class="chip c-uc"><div class="n" id="s-uc">—</div><div class="l">Usecases</div></div>
-      <div class="chip c-cov"><div class="n" id="s-cov">—</div><div class="l">Covered</div></div>
       <div class="chip c-ag"><div class="n" id="s-ag">—</div><div class="l">Agents</div></div>
       <div class="chip c-sk"><div class="n" id="s-sk">—</div><div class="l">Skills</div></div>
+      <div class="chip c-uc"><div class="n" id="s-uc">—</div><div class="l">Use cases</div></div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
       <button class="btnref" id="btnref" title="Refresh from Google Sheets" onclick="loadData()">
@@ -573,9 +576,9 @@ function pct(n,t){return t?Math.round(n/t*100):0;}
 function updateStats(){
   // Counter cards reflect the current filter set (search + lib filters)
   const pool=AGENTS.filter(a=>tOk(a));
-  const cov=UCS.filter(u=>getAgs(u).some(a=>tOk(a))).length;
-  document.getElementById('s-uc').textContent=UCS.length;
-  document.getElementById('s-cov').textContent=cov;
+  // Use cases = UCs whose agent/skill set includes at least one item matching current filters
+  const ucCovered=UCS.filter(u=>getAgs(u).some(a=>tOk(a)));
+  document.getElementById('s-uc').textContent=ucCovered.length;
   document.getElementById('s-ag').textContent=pool.filter(a=>a.type==='agent').length;
   document.getElementById('s-sk').textContent=pool.filter(a=>a.type==='skill').length;
 }
@@ -641,8 +644,8 @@ document.addEventListener('click',e=>{
 // ── SHARED STATUS LEGEND + COUNTERS ──
 // Counts agents/skills by unified status, scoped to the current filter set.
 function statusCounts(pool){
-  const c={td:0,ip:0,pilot:0,ru:0};
-  pool.forEach(a=>{c[agentStatus(a)]++;});
+  const c={ns:0,td:0,ip:0,pilot:0,ru:0};
+  pool.forEach(a=>{const s=agentStatus(a);c[s]=(c[s]||0)+1;});
   return c;
 }
 // Render the shared status legend with live counts into a target element id
@@ -771,10 +774,13 @@ function renderCard(uc){
   </div>`;
 }
 function renderARow(a){
-  return `<div class="arow ${a.type==='agent'?'ag':'sk'}"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span>
+  let relCount=0,relLabel='';
+  if(a.type==='skill'){relCount=agentsOfSkill(a).length;relLabel=relCount===1?'1 Agent':`${relCount} Agents`;}
+  else{relCount=skillsOfAgent(a).length;relLabel=relCount===1?'1 Skill':`${relCount} Skills`;}
+  return `<div class="arow ${a.type==='agent'?'ag':'sk'}" onclick="event.stopPropagation();openAgentDetail('${esc(a.name)}',false)" style="cursor:pointer"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span>
     <div class="abody"><div class="aname">${a.name}</div>
-    <div class="afoot">${a.phase?`<span class="ph ${phc(a.phase)}">${a.phase}</span>`:''}${a.team?`<span class="ttag">${a.team}</span>`:''}${a.launch?`<span class="dtag">📅 ${fmtD(a.launch)}</span>`:''}</div>
-    ${a.phase&&a.progress!==undefined?`<div class="prow"><div class="pbar"><div class="pfill ${pc(a.progress)}" style="width:${a.progress}%"></div></div><span class="ppct">${a.progress}%</span></div>`:''}</div></div>`;
+    <div class="afoot">${a.team?`<span class="ttag">${a.team}</span>`:''}${relCount>0?`<span class="ttag" style="color:${a.type==='skill'?'var(--ag)':'var(--sk)'}">${relLabel}</span>`:''}${a.role?`<span class="ttag">${a.role}</span>`:''}</div>
+    <div class="prow"><div class="pbar"><div class="pfill ${pc(a.progress)}" style="width:${a.progress}%"></div></div><span class="ppct">${a.progress}%</span></div></div></div>`;
 }
 function renderAgGrp(key){
   const clr={team:'#1558b0',ability:'#6d28d9',role:'#0b7a68'};
@@ -794,27 +800,28 @@ function renderAgOnly(){
 }
 function renderAC(a,orp=false){
   const st=agentStatus(a);const sd=ST_DEF[st];
-  // Relationship: Skill → part of agent(s); Agent → composed of skills
-  let relHtml='';
+  // Relationship: Skill → part of N agent(s); Agent → composed of N skill(s) — COUNT ONLY on preview card
+  let relCount=0,relLabel='';
   if(a.type==='skill'){
-    const parts=agentsOfSkill(a);
-    if(parts.length) relHtml=`<div class="acrow"><span class="ack">Part of</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;
+    relCount=agentsOfSkill(a).length;
+    relLabel=relCount===1?'1 Agent':`${relCount} Agents`;
   }else{
-    const sks=skillsOfAgent(a);
-    if(sks.length) relHtml=`<div class="acrow"><span class="ack">Skills</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;
+    relCount=skillsOfAgent(a).length;
+    relLabel=relCount===1?'1 Skill':`${relCount} Skills`;
   }
-  return `<div class="ac ${a.type==='agent'?'isag':'issk'} ${orp?'orp':''}" onclick="openAgentDetail('${esc(a.name)}')" style="cursor:pointer"><div class="achdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span><span class="acname">${a.name}</span><span style="margin-left:auto;font-size:8.5px;font-weight:700;padding:1px 6px;border-radius:3px;background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
+  const relHtml=relCount>0?`<div class="acrow"><span class="ack">${a.type==='skill'?'Agent':'Skill'}</span><span style="color:${a.type==='skill'?'var(--ag)':'var(--sk)'};font-size:11px;font-weight:600">${relLabel}</span></div>`:'';
+  return `<div class="ac ${a.type==='agent'?'isag':'issk'} ${orp?'orp':''}" onclick="openAgentDetail('${esc(a.name)}')" style="cursor:pointer"><div class="achdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span><span class="acname">${a.name}</span></div>
     <div class="acrows">
-      ${a.team?`<div class="acrow"><span class="ack">Team</span><span class="ttag">${a.team}</span></div>`:''}
       ${a.ucName?`<div class="acrow"><span class="ack">Usecase</span><span style="color:var(--tx2);font-size:11px">${a.ucName}</span></div>`:''}
-      ${relHtml}
-      ${a.ability?`<div class="acrow"><span class="ack">Ability</span><span>${a.ability}</span></div>`:''}
-      ${a.role?`<div class="acrow"><span class="ack">Role</span><span>${a.role}</span></div>`:''}
-      ${a.phase?`<div class="acrow"><span class="ack">Phase</span><span class="ph ${phc(a.phase)}">${a.phase}</span></div>`:''}
+      ${a.team?`<div class="acrow"><span class="ack">Team</span><span class="ttag">${a.team}</span></div>`:''}
       ${a.owner?`<div class="acrow"><span class="ack">Owner</span><span>${a.owner}</span></div>`:''}
+      ${a.ability?`<div class="acrow"><span class="ack">Ability</span><span>${a.ability}</span></div>`:''}
+      ${relHtml}
+      ${a.role?`<div class="acrow"><span class="ack">Role</span><span>${a.role}</span></div>`:''}
+      <div class="acrow"><span class="ack">Phase</span><span class="ph" style="background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
       ${a.launch?`<div class="acrow"><span class="ack">Launch</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px">${fmtD(a.launch)}</span></div>`:''}
     </div>
-    ${a.phase?`<div class="prow" style="margin-top:7px"><div class="pbar"><div class="pfill ${pc(a.progress)}" style="width:${a.progress}%"></div></div><span class="ppct">${a.progress}%</span></div>`:''}</div>`;
+    <div class="prow" style="margin-top:7px"><div class="pbar"><div class="pfill ${pc(a.progress)}" style="width:${a.progress}%"></div></div><span class="ppct">${a.progress}%</span></div></div>`;
 }
 
 // ── MODAL ──
@@ -1027,8 +1034,8 @@ function drawTL(){
   };
 }
 
-// ── TIMELINE AGENTS MODAL ──
-function openAgentsModal(ags,launch,title){
+// ── AGENT/SKILL DETAIL MODAL (shared by Agent Library + AI Adoption + Timeline) ──
+function openAgentsModal(ags,launch,title,showUC=true){
   const d=launch?parseDate(launch):null;
   const lbl=d?d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):(launch||null);
   const inMs=d?TL_MS.find(m=>d>=m.start&&d<=m.end):null;
@@ -1037,22 +1044,24 @@ function openAgentsModal(ags,launch,title){
     :`<span style="font-size:10.5px;padding:2px 9px;border-radius:3px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:600">⚠ Out of milestone</span>`)
     :'';
   const agh=ags.map(a=>{
-    const ph=phc(a.phase);
+    const st=agentStatus(a);const sd=ST_DEF[st];
     let relRow='';
-    if(a.type==='skill'){const parts=agentsOfSkill(a);if(parts.length) relRow=`<div class="mrow"><span class="mk">Part of</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;}
-    else{const sks=skillsOfAgent(a);if(sks.length) relRow=`<div class="mrow"><span class="mk">Skills</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;}
+    if(a.type==='skill'){const parts=agentsOfSkill(a);if(parts.length) relRow=`<div class="mrow"><span class="mk">Agent</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;}
+    else{const sks=skillsOfAgent(a);if(sks.length) relRow=`<div class="mrow"><span class="mk">Skill</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;}
     const descRow=a.desc&&a.desc!=='TBC'?`<div class="mrow" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="mk">Description</span><span style="color:var(--tx2);font-size:11px;line-height:1.45">${a.desc.replace(/<br\s*\/?>/gi,' ')}</span></div>`:'';
+    const ucRow=showUC?`<div class="mrow"><span class="mk">Use case</span><span style="color:var(--tx2);font-size:11px">${a.ucName||'—'}</span></div>`:'';
     return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
       ${descRow}
+      ${ucRow}
       <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
       <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
-      ${relRow}
-      <div class="mrow"><span class="mk">Phase</span><span class="ph ${ph}">${a.phase||'—'}</span></div>
       <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
+      ${relRow}
       <div class="mrow"><span class="mk">Role</span><span>${a.role||'—'}</span></div>
-      <div class="mrow"><span class="mk">Use case</span><span style="color:var(--tx2);font-size:11px">${a.ucName||'—'}</span></div>
       <div class="mrow"><span class="mk">Process</span><span style="color:var(--mu);font-size:11px">${a.ucProcess||'—'}</span></div>
-      ${a.phase?`<div class="mpbw"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu)"><span>Progress</span><strong style="font-family:'IBM Plex Mono',monospace">${a.progress}%</strong></div><div class="mpb"><div class="mpf ${pc(a.progress)}" style="width:${a.progress}%"></div></div></div>`:''}</div>`;
+      <div class="mrow"><span class="mk">Phase</span><span class="ph" style="background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
+      <div class="mrow"><span class="mk">Launch</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px">${a.launch?fmtD(a.launch):'—'}</span></div>
+      <div class="mpbw"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu)"><span>Progress</span><strong style="font-family:'IBM Plex Mono',monospace">${a.progress}%</strong></div><div class="mpb"><div class="mpf ${pc(a.progress)}" style="width:${a.progress}%"></div></div></div></div>`;
   }).join('');
   document.getElementById('mbody').innerHTML=`
     ${lbl?`<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap"><span style="font-size:10.5px;color:var(--mu)">Launch: ${lbl}</span>${dateBadge}</div>`:''}
@@ -1150,31 +1159,35 @@ const ADOPT_GROUPS=[
   ]},
   {label:'Development',color:'#1a2e50',sub:[
     {label:'DESIGN',color:'#6d28d9',bg:'#6d28d915',stage:'Design',procs:[
-      {id:'3.1',name:'User Experience Research'},{id:'3.2',name:'User Journey Design'},
-      {id:'3.3',name:'User Interface Design (Low-fi)'},{id:'4.1',name:'High-level Design'},
-      {id:'4.2',name:'Effort Estimation'},{id:'5.1',name:'Data Insight & Analysis'},
-      {id:'6.1',name:'Ideation & Planning'},{id:'6.2',name:'Project Governance'},
-      {id:'7.1',name:'Detailed User Story Development'},{id:'7.2',name:'Development Support'},
-      {id:'7.3',name:'Test Support'},{id:'7.4',name:'Deployment Support'},
-      {id:'8.1',name:'User Interface Design (Hi-fi)'},{id:'8.2',name:'Copywriting'},
+      {id:'3.1',name:'User Experience Research'},{id:'4.1',name:'High-level Design'},
+      {id:'5.1',name:'Data Insight & Analysis'},{id:'6.1',name:'Ideation & Planning'},
+      {id:'7.1',name:'Detailed User Story Development'},{id:'8.1',name:'User Interface Design (Hi-fi)'},
       {id:'9.1',name:'Detailed Design'},
-      {id:'D.DRG',name:'Data Requirement Gathering'},{id:'D.DO',name:'DevOps'},
+      {id:'3.2',name:'User Journey Design'},{id:'4.2',name:'Effort Estimation'},
+      {id:'D.DRG',name:'Data Requirement Gathering'},{id:'6.2',name:'Project Governance'},
+      {id:'7.2',name:'Development Support'},{id:'8.2',name:'Copywriting'},
+      {id:'3.3',name:'User Interface Design (Low-fi)'},
+      {id:'7.3',name:'Test Support'},
+      {id:'7.4',name:'Deployment Support'},
+      {id:'D.DO',name:'DevOps'},
     ]},
     {label:'BUILD',color:'#0b7a68',bg:'#0b7a6815',stage:'Build',procs:[
-      {id:'10.1',name:'Development'},{id:'10.2',name:'Unit Test'},
-      {id:'10.3',name:'Code Review'},{id:'10.4',name:'Test Support'},
-      {id:'B.NFR',name:'NFR Gathering'},{id:'B.PTS',name:'Performance Test Scripting'},
-      {id:'B.PTX',name:'Performance Test Execution'},
-      {id:'B.PSD',name:'Penetration Test Scenario Development'},{id:'B.PTE',name:'Penetration Test Execution'},
+      {id:'10.1',name:'Development'},{id:'B.NFR',name:'NFR Gathering'},
+      {id:'B.PSD',name:'Penetration Test Scenario Development'},{id:'B.EP',name:'Environment Provisioning'},
+      {id:'B.DD',name:'Data Development'},
+      {id:'10.2',name:'Unit Test'},{id:'B.PTS',name:'Performance Test Scripting'},
+      {id:'B.PTE',name:'Penetration Test Execution'},{id:'B.CD',name:'CI/CD Pipeline Development'},
+      {id:'B.DTS',name:'Data Test Support'},
+      {id:'10.3',name:'Code Review'},{id:'B.PTX',name:'Performance Test Execution'},
       {id:'B.PTR',name:'Penetration Test Report'},
-      {id:'B.EP',name:'Environment Provisioning'},{id:'B.CD',name:'CI/CD Pipeline Development'},
-      {id:'B.DD',name:'Data Development'},{id:'B.DTS',name:'Data Test Support'},
+      {id:'10.4',name:'Test Support'},
     ]},
     {label:'TEST',color:'#92400e',bg:'#92400e12',stage:'Test',procs:[
-      {id:'11.1',name:'Test Approach'},{id:'11.2',name:'Test Case Development'},
-      {id:'11.3',name:'Defect Management'},{id:'12.1',name:'SIT Test Data Preparation'},
-      {id:'12.2',name:'SIT Test Execution'},{id:'13.1',name:'UAT Test Data Preparation'},
+      {id:'11.1',name:'Test Approach'},{id:'12.1',name:'SIT Test Data Preparation'},
+      {id:'13.1',name:'UAT Test Data Preparation'},
+      {id:'11.2',name:'Test Case Development'},{id:'12.2',name:'SIT Test Execution'},
       {id:'13.2',name:'UAT Test Execution'},
+      {id:'11.3',name:'Defect Management'},
     ]},
     {label:'DEPLOYMENT',color:'#991b1b',bg:'#991b1b12',stage:'Deployment',procs:[
       {id:'14.1',name:'Runbook Development'},{id:'14.2A',name:'IVT Test Case Development'},
@@ -1211,6 +1224,7 @@ function adoptStatus(procId){
 
 function renderAdopt(){
   buildCtrlAdopt();
+  updateStats();
   const board=document.getElementById('adopt-board');
   const ucEl=document.getElementById('main-adopt-uc');
   const titleTxt=document.getElementById('adopt-title-txt');
@@ -1259,9 +1273,12 @@ function renderAdopt(){
         const dominantStatus=dominant.count>0?dominant.status:'ns';
         const empty=!ags.length;
 
-        // Add accent bar if: dominant is 'td' AND there are agents in progress (or higher)
-        const hasProgress=statuses.ip>0||statuses.pilot>0||statuses.ru>0;
-        const cardClass=(dominantStatus==='td'&&hasProgress?`${dominantStatus} has-progress`:dominantStatus)+(empty?' empty':'');
+        // Accent bar: ONLY when dominant status is exactly 'ns' (Not Start) but the card actually has
+        // agents (some of which are further along). Bar is always a fixed dark-gray — it signals
+        // "this card isn't really empty" without implying a specific status color.
+        // Cards with NO agents at all stay fully plain (no accent).
+        const hasProgress=!empty&&dominantStatus==='ns';
+        const cardClass=`${dominantStatus}${hasProgress?' has-progress':''}${empty?' empty':''}`;
 
         // Build breakdown text (only non-zero statuses)
         const breakdown=statusArray.filter(s=>s.count>0).map(s=>`${s.count} ${s.label}`).join(', ');
@@ -1299,12 +1316,12 @@ function renderAdopt(){
 function adoptClick(procId,procName){
   const ags=visAgents().filter(a=>hasProcessId(a,procId));
   if(!ags.length){showToast(`No ${vSearch?'matching ':''}agents for ${procId} ${procName}`,'i');return;}
-  openAgentsModal(ags,null,`${procId} — ${procName}`);
+  openAgentsModal(ags,null,`${procId} — ${procName}`,false);
 }
-function openAgentDetail(name){
+function openAgentDetail(name,showUC=true){
   const a=AGENTS.find(x=>x.name===name);
   if(!a) return;
-  openAgentsModal([a],a.launch,a.name);
+  openAgentsModal([a],a.launch,a.name,showUC);
 }
 
 loadData();
