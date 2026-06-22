@@ -217,7 +217,7 @@ select.dd:focus{border-color:var(--ag)}
 <nav>
   <div class="nav-brand"><div><h1>Gen AI SDLC</h1><p>Dashboard</p></div></div>
   <button class="tab on" id="tab-lib" onclick="switchTab('lib')">Agent Library</button>
-  <button class="tab"    id="tab-adopt" onclick="switchTab('adopt')">AI Adoption</button>
+  <button class="tab"    id="tab-adopt" onclick="switchTab('adopt')">SDLC AI Adoption</button>
   <button class="tab"    id="tab-tl"  onclick="switchTab('tl')">SDLC Timeline</button>
   <div class="nav-search">
     <div class="nav-search-wrap">
@@ -248,40 +248,26 @@ select.dd:focus{border-color:var(--ag)}
 
 <!-- ── PAGE: AGENT LIBRARY ── -->
 <div class="page on" id="page-lib">
-  <div class="legend">
-    <div class="lg"><div class="ld" style="background:#f5a623;border-radius:2px"></div>UC has agent/skill</div>
-    <div class="lg"><div class="ld" style="background:#9ca3af"></div>UC not covered</div>
-    <div class="lsep"></div>
-    <div class="lg"><div class="ld" style="background:var(--ag);border-radius:50%"></div>Agent</div>
-    <div class="lg"><div class="ld" style="background:var(--sk);border-radius:50%"></div>Skill</div>
-    <div class="lsep"></div>
-    <div class="lg"><div class="ld" style="background:var(--ph)"></div>≥70%</div>
-    <div class="lg"><div class="ld" style="background:var(--pm)"></div>30–69%</div>
-    <div class="lg"><div class="ld" style="background:var(--pl)"></div>&lt;30%</div>
-  </div>
+  <div class="legend" id="lib-legend"></div>
   <div class="cbar" id="cbar"></div>
   <div class="main" id="main-lib"><div style="text-align:center;padding:50px;color:var(--mu)">Loading…</div></div>
 </div>
 
 <!-- ── PAGE: AI ADOPTION ── -->
 <div class="page" id="page-adopt">
+  <div class="legend" id="adopt-status-legend"></div>
+  <div class="cbar" id="cbar-adopt"></div>
   <div class="adopt-wrap">
     <div class="adopt-topbar">
       <div>
-        <div class="adopt-title-txt">SDLC Process Overview</div>
-        <div style="font-size:11px;color:var(--mu);margin-top:1px">AI Adoption status across SDLC processes</div>
-      </div>
-      <div class="adopt-legend-row" id="adopt-legend-row">
-        <div class="aleg-item aleg-ns"><span class="aleg-dot"></span>Not Start</div>
-        <div class="aleg-item aleg-td"><span class="aleg-dot"></span>To Do</div>
-        <div class="aleg-item aleg-ip"><span class="aleg-dot"></span>In Progress</div>
-        <div class="aleg-item aleg-pilot"><span class="aleg-dot"></span>Pilot</div>
-        <div class="aleg-item aleg-ru"><span class="aleg-dot"></span>Ready to Use</div>
+        <div class="adopt-title-txt" id="adopt-title-txt">SDLC Process Overview</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:1px" id="adopt-title-sub">AI Adoption status across SDLC processes</div>
       </div>
     </div>
     <div class="adopt-scroll">
       <div class="adopt-board" id="adopt-board"></div>
     </div>
+    <div class="main" id="main-adopt-uc" style="display:none"></div>
   </div>
 </div>
 
@@ -347,6 +333,9 @@ function parseAgentSheet(rows){
   const gi=k=>h.findIndex(x=>x.includes(k));
   const iN=gi('agentname')>=0?gi('agentname'):(gi('name')>=0?gi('name'):2);
   const [iA,iSk,iT,iU,iPr,iSt,iPh,iPg,iL,iO,iAb,iR]=[gi('aiagent'),gi('skill'),gi('team'),gi('usecase'),gi('sdlcprocess')>=0?gi('sdlcprocess'):gi('process'),gi('sdlcstage')>=0?gi('sdlcstage'):gi('stage'),gi('developmentphase')>=0?gi('developmentphase'):gi('phase'),gi('devprogress')>=0?gi('devprogress'):gi('progress'),gi('launchdate')>=0?gi('launchdate'):gi('launch'),gi('owner'),gi('coreability')>=0?gi('coreability'):gi('ability'),gi('relatedrole')>=0?gi('relatedrole'):gi('role')];
+  const iM=gi('matchingagent');
+  const iD=gi('description');
+  const iS=gi('status');
   const g=(r,i)=>i>=0&&i<r.length?(r[i]||'').trim():'';
   const bool=v=>v.toLowerCase()==='true'||v==='1';
   const out=[];
@@ -362,20 +351,26 @@ function parseAgentSheet(rows){
       else if(n>1) pr=Math.round(n);           // "70" → 70 (already integer)
       else pr=Math.round(n*100);               // 0.7→70, 1→100 (GSheets decimal)
     }
-    out.push({name:n,type:(!bool(g(r,iA))&&bool(g(r,iSk)))?'skill':'agent',team:g(r,iT),ucName:g(r,iU),ucProcess:g(r,iPr),stage:g(r,iSt),phase:g(r,iPh),progress:isNaN(pr)?0:pr,launch:g(r,iL),owner:g(r,iO),ability:g(r,iAb),role:g(r,iR)});
+    out.push({name:n,type:(!bool(g(r,iA))&&bool(g(r,iSk)))?'skill':'agent',team:g(r,iT),ucName:g(r,iU),ucProcess:g(r,iPr),stage:g(r,iSt),phase:g(r,iPh),progress:isNaN(pr)?0:pr,launch:g(r,iL),owner:g(r,iO),ability:g(r,iAb),role:g(r,iR),matchingAgent:g(r,iM),desc:g(r,iD),status:g(r,iS)});
   }
   return out.length?out:null;
 }
 
 // ── STATE ──
 let UCS=[],AGENTS=[];
-let vSDLC=false,vHasAgent=false,vView='by-team',vStage='all',vType='all',vSearch='';
+// Agent Library: vView in {by-team, by-role, by-ability}; vType filter; multi-select ability/team/role
+// AI Adoption: vSDLC toggle (process vs usecase view), vAdoptView in {by-stage, by-process}, vStage, vHasAgent
+let vSDLC=false,vHasAgent=false,vView='by-team',vAdoptView='by-stage',vStage='all',vType='all',vSearch='';
 let vAbility=new Set(),vTeam=new Set(),vRole=new Set();
 
-// Agents filtered by current search query (used by all 3 pages)
-const visAgents=()=>vSearch
-  ?AGENTS.filter(a=>(a.name||'').toLowerCase().includes(vSearch)||(a.team||'').toLowerCase().includes(vSearch))
-  :AGENTS;
+// Agents filtered by current search + Team/Role/Ability (shared across Agent Library + AI Adoption)
+const visAgents=()=>AGENTS.filter(a=>{
+  if(vAbility.size>0&&!vAbility.has(a.ability||'')) return false;
+  if(vTeam.size>0&&!vTeam.has(a.team||'')) return false;
+  if(vRole.size>0){const roles=(a.role||'').split(/[,\/]/).map(r=>r.trim());if(!roles.some(r=>vRole.has(r))) return false;}
+  if(vSearch){const q=vSearch.toLowerCase();return (a.name||'').toLowerCase().includes(q)||(a.team||'').toLowerCase().includes(q);}
+  return true;
+});
 let curPage='lib';
 const SO=['Initiation','Discovery','Design','Build','Test','Deployment','Post Development','Across Phase'];
 const SC={Initiation:'#c2590a',Discovery:'#1558b0',Design:'#6d28d9',Build:'#0b7a68',Test:'#92400e',Deployment:'#991b1b','Post Development':'#9d174d','Across Phase':'#9d174d'};
@@ -517,6 +512,46 @@ function getAgs(uc){return AGENTS.filter(a=>{
   return hasProcessId(a,uc.process.trim().split(' ')[0]);
 });}
 const isOrph=a=>isSdlcAg(a)&&(!a.ucName||!a.ucName.trim()); // SDLC agent with no UC mapping
+// ── MATCHING AGENT/SKILL RELATIONSHIPS ──
+// Matching Agent (col H) can be multi-value (comma-separated) and points to other Agent Name(s)
+function matchingAgentNames(a){
+  if(!a.matchingAgent) return [];
+  return a.matchingAgent.split(',').map(s=>s.trim()).filter(Boolean);
+}
+// For an Agent: find all skills that list this agent's name in their Matching Agent
+function skillsOfAgent(a){
+  return AGENTS.filter(s=>s.type==='skill'&&matchingAgentNames(s).includes(a.name)).map(s=>s.name);
+}
+// For a Skill: the agent name(s) it is part of
+function agentsOfSkill(a){
+  return matchingAgentNames(a);
+}
+// ── UNIFIED STATUS (shared by Agent Library + AI Adoption) ──
+// Reads the explicit "Status" column (data source col Z) as source of truth.
+// Falls back to phase/progress-derived status only if Status is blank/unrecognized.
+function agentStatus(a){
+  const raw=(a.status||'').toLowerCase().trim();
+  if(raw==='not start'||raw==='notstart') return 'ns';
+  if(raw==='to do'||raw==='todo') return 'td';
+  if(raw==='in progress'||raw==='inprogress') return 'ip';
+  if(raw==='pilot') return 'pilot';
+  if(raw==='ready to use'||raw==='readytouse') return 'ru';
+  // Fallback (no/unrecognized Status value): derive from phase + progress
+  const ph=(a.phase||'').toLowerCase();
+  const p=typeof a.progress==='number'?a.progress:0;
+  if(ph==='production'&&p>=100) return 'ru';
+  if(ph==='pilot'&&p>80) return 'pilot';
+  if(p>0) return 'ip';
+  return 'ns';
+}
+const ST_DEF={
+  ns:{lb:'Not Start',color:'#6b7280',bg:'#f9fafb',bd:'#e5e7eb',dot:'#9ca3af'},
+  td:{lb:'To Do',color:'#3d5a8e',bg:'#edf2f9',bd:'#b0c4de',dot:'#4a6fa5'},
+  ip:{lb:'In Progress',color:'#92400e',bg:'#fffbeb',bd:'#fde68a',dot:'#f5a623'},
+  pilot:{lb:'Pilot',color:'#5a6b1c',bg:'#f4f6e5',bd:'#c5d06a',dot:'#8ea82a'},
+  ru:{lb:'Ready to Use',color:'#15803d',bg:'#f0fdf4',bd:'#bbf7d0',dot:'#15803d'},
+};
+const ST_ORDER=['ns','td','ip','pilot','ru'];
 const pc=p=>p>=70?'pfh':p>=30?'pfm':'pfl';
 function phc(ph){if(!ph)return 'phi';const p=ph.toLowerCase();return p.includes('testing')?'pht':p.includes('build')?'phb':p.includes('pilot')?'php':p.includes('design')?'phd':p.includes('launch')||p.includes('live')?'phl':'phi';}
 function fmtD(d){if(!d)return '';try{const dt=new Date(d);return isNaN(dt)?d:dt.toLocaleDateString('en-GB',{year:'2-digit',month:'short',day:'numeric'});}catch(e){return d;}}
@@ -536,11 +571,13 @@ function pct(n,t){return t?Math.round(n/t*100):0;}
 
 // ── STATS ──
 function updateStats(){
-  const cov=UCS.filter(u=>getAgs(u).length>0).length;
+  // Counter cards reflect the current filter set (search + lib filters)
+  const pool=AGENTS.filter(a=>tOk(a));
+  const cov=UCS.filter(u=>getAgs(u).some(a=>tOk(a))).length;
   document.getElementById('s-uc').textContent=UCS.length;
   document.getElementById('s-cov').textContent=cov;
-  document.getElementById('s-ag').textContent=AGENTS.filter(a=>a.type==='agent').length;
-  document.getElementById('s-sk').textContent=AGENTS.filter(a=>a.type==='skill').length;
+  document.getElementById('s-ag').textContent=pool.filter(a=>a.type==='agent').length;
+  document.getElementById('s-sk').textContent=pool.filter(a=>a.type==='skill').length;
 }
 
 // ── TAB ──
@@ -576,13 +613,13 @@ function msToggle(id){
   document.getElementById('ms-list-'+id).classList.toggle('open');
 }
 function msChange(id,val,checked){
-  const map={ability:vAbility,team:vTeam,role:vRole};
+  const map={ability:vAbility,team:vTeam,role:vRole,teamA:vTeam,roleA:vRole};
   const set=map[id];
   if(checked) set.add(val); else set.delete(val);
   // Update button label + styling without full rebuild
   const btn=document.getElementById('ms-btn-'+id);
   if(btn){
-    const labels={ability:'Ability',team:'Team',role:'Role'};
+    const labels={ability:'Ability',team:'Team',role:'Role',teamA:'Team',roleA:'Role'};
     btn.textContent=msLabel(set,labels[id]);
     btn.className='ms-btn'+(set.size>0?' has-sel':'');
   }
@@ -591,7 +628,9 @@ function msChange(id,val,checked){
     const cb=el.querySelector('input');
     if(cb){el.classList.toggle('checked',cb.checked);}
   });
-  renderLib();
+  // Since team/role are shared filters across pages, rebuild whichever page-specific control bar
+  // wasn't the one just edited, so both stay in sync (e.g. editing Team on Adoption also updates Library's dropdown state next render).
+  renderAll();
 }
 // Close dropdown on outside click
 document.addEventListener('click',e=>{
@@ -599,94 +638,108 @@ document.addEventListener('click',e=>{
     document.querySelectorAll('.ms-list.open').forEach(el=>el.classList.remove('open'));
 });
 
-// ── LIBRARY CONTROLS ──
+// ── SHARED STATUS LEGEND + COUNTERS ──
+// Counts agents/skills by unified status, scoped to the current filter set.
+function statusCounts(pool){
+  const c={td:0,ip:0,pilot:0,ru:0};
+  pool.forEach(a=>{c[agentStatus(a)]++;});
+  return c;
+}
+// Render the shared status legend with live counts into a target element id
+function renderStatusLegend(elId,pool){
+  const el=document.getElementById(elId);if(!el) return;
+  const c=statusCounts(pool);
+  el.innerHTML=ST_ORDER.map(s=>{
+    const d=ST_DEF[s];
+    return `<div class="lg" style="gap:6px"><span style="width:11px;height:11px;border-radius:50%;background:${d.dot};display:inline-block"></span><span style="color:${d.color};font-weight:600">${d.lb}</span><span style="font-weight:700;color:${d.color}">${c[s]}</span></div>`;
+  }).join('<div class="lsep"></div>');
+}
+
+// ── LIBRARY CONTROLS (no SDLC; By Team/Role/Ability + filters) ──
 function buildCtrl(){
   const agViews=[['by-team','By Team'],['by-role','By Role'],['by-ability','By Ability']];
-  const ucViews=[['by-stage','By Stage'],['by-process','By Process'],['by-team','By Team'],['by-role','By Role'],['by-ability','By Ability']];
-  const curViews=vSDLC?ucViews:agViews;
-  if(!curViews.find(v=>v[0]===vView)) vView=vSDLC?'by-stage':'by-team';
-  const stages=['all',...SO];
+  if(!agViews.find(v=>v[0]===vView)) vView='by-team';
   const dd=(id,opts,val,onch,lbl)=>`<div class="cg"><span class="cl">${lbl}</span><select class="dd" id="${id}" onchange="${onch}">${opts.map(o=>`<option value="${esc(Array.isArray(o)?o[0]:o)}" ${val===(Array.isArray(o)?o[0]:o)?'selected':''}>${Array.isArray(o)?o[1]:(o==='all'?'All':o)}</option>`).join('')}</select></div>`;
-
-  // Build dynamic options from current AGENTS data
   const abilityOpts=uniq(AGENTS.map(a=>a.ability).filter(Boolean)).sort();
   const teamOpts=uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort();
   const roleOpts=uniq(AGENTS.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort();
 
-  let h=`<button class="pill ${vSDLC?'on':''}" onclick="toggleSDLC()">SDLC</button><div class="csep"></div>`;
-  h+=dd('ddv',curViews,vView,"setView(this.value)",'VIEW');
-  h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderLib()",'TYPE');
-  h+='<div class="csep"></div><div class="cg"><span class="cl">ABILITY</span>'+msHtml('ability',abilityOpts,vAbility,'Ability')+'</div>';
+  // Order: View, Team, Role, Ability, Type
+  let h=dd('ddv',agViews,vView,"setView(this.value)",'VIEW');
   h+='<div class="csep"></div><div class="cg"><span class="cl">TEAM</span>'+msHtml('team',teamOpts,vTeam,'Team')+'</div>';
   h+='<div class="csep"></div><div class="cg"><span class="cl">ROLE</span>'+msHtml('role',roleOpts,vRole,'Role')+'</div>';
-  if(vSDLC){
-    h+='<div class="csep"></div>'+dd('dds',stages,vStage,"vStage=this.value;renderLib()",'STAGE');
-    if(vView==='by-stage'||vView==='by-process'){
-      h+='<div class="csep"></div>'+`<button class="pill ${vHasAgent?'on':''}" onclick="vHasAgent=!vHasAgent;renderAll()">Has agent</button>`;
-    }
-  }
+  h+='<div class="csep"></div><div class="cg"><span class="cl">ABILITY</span>'+msHtml('ability',abilityOpts,vAbility,'Ability')+'</div>';
+  h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderAll()",'TYPE');
   h+='<button class="btnclr" title="Clear filters" onclick="clearF()">✕</button>';
   document.getElementById('cbar').innerHTML=h;
 }
+
+// ── AI ADOPTION CONTROLS (SDLC toggle, View by-stage/by-process, Stage, Has agent) ──
+function buildCtrlAdopt(){
+  const dd=(id,opts,val,onch,lbl)=>`<div class="cg"><span class="cl">${lbl}</span><select class="dd" id="${id}" onchange="${onch}">${opts.map(o=>`<option value="${esc(Array.isArray(o)?o[0]:o)}" ${val===(Array.isArray(o)?o[0]:o)?'selected':''}>${Array.isArray(o)?o[1]:(o==='all'?'All':o)}</option>`).join('')}</select></div>`;
+  const stages=['all',...SO];
+  const teamOpts=uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort();
+  const roleOpts=uniq(AGENTS.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort();
+
+  let h=`<button class="pill ${vSDLC?'on':''}" onclick="toggleSDLC()">Use Cases</button>`;
+  if(vSDLC){
+    // View dropdown only when Use Cases ON
+    h+='<div class="csep"></div>'+dd('ddav',[['by-stage','By Stage'],['by-process','By Process']],vAdoptView,"setAdoptView(this.value)",'VIEW');
+    // Stage dropdown only when View = By Stage
+    if(vAdoptView==='by-stage'){
+      h+='<div class="csep"></div>'+dd('dds',stages,vStage,"vStage=this.value;renderAdopt()",'STAGE');
+    }
+  }
+  h+='<div class="csep"></div><div class="cg"><span class="cl">TEAM</span>'+msHtml('teamA',teamOpts,vTeam,'Team')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">ROLE</span>'+msHtml('roleA',roleOpts,vRole,'Role')+'</div>';
+  // Has agent button (always available on adopt page)
+  h+='<div class="csep"></div>'+`<button class="pill ${vHasAgent?'on':''}" onclick="vHasAgent=!vHasAgent;renderAdopt()">Has agent</button>`;
+  h+='<button class="btnclr" title="Clear filters" onclick="clearF()">✕</button>';
+  document.getElementById('cbar-adopt').innerHTML=h;
+}
 function toggleSDLC(){
   vSDLC=!vSDLC;
-  if(vSDLC){vHasAgent=false;vView='by-stage';}
-  else{vStage='all';vView='by-team';}
-  renderAll();
+  if(vSDLC){vAdoptView='by-stage';}
+  else{vStage='all';}
+  renderAdopt();
 }
-function setView(v){
-  vView=v;
-  // Reset Has agent when switching away from UC card views
-  if(v!=='by-stage'&&v!=='by-process') vHasAgent=false;
-  renderAll();
+function setView(v){vView=v;renderAll();}
+function setAdoptView(v){
+  vAdoptView=v;
+  if(v!=='by-stage') vStage='all';
+  renderAdopt();
 }
-function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vStage='all';vType='all';vAbility=new Set();vTeam=new Set();vRole=new Set();vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
+function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vAdoptView='by-stage';vStage='all';vType='all';vAbility=new Set();vTeam=new Set();vRole=new Set();vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
 function renderAll(){
-  buildCtrl();updateStats();renderLib();
+  buildCtrl();updateStats();renderLib();renderStatusLegend('lib-legend',AGENTS.filter(a=>tOk(a)));
   if(curPage==='adopt') renderAdopt();
   if(curPage==='tl'){drawTL();drawMsCards();drawOutCard();}
-  // Show clear button when search active
   const clrBtn=document.getElementById('navSearchClear');
   if(clrBtn) clrBtn.style.display=vSearch?'block':'none';
 }
 
-// ── LIBRARY RENDER ──
+// ── LIBRARY RENDER (always agent/skill grouped — no SDLC mode here) ──
 function renderLib(){
   const el=document.getElementById('main-lib');
-  let html='';
-
-  if(!vSDLC){
-    // ── Agent/Skill view (SDLC OFF) — show ALL agents, no SDLC filter ──
-    let ags=AGENTS.filter(a=>tOk(a));
-    const key=vView==='by-role'?'role':vView==='by-ability'?'ability':'team';
-    const clr={team:'#1558b0',ability:'#6d28d9',role:'#0b7a68'};
-    const groups=uniq(ags.map(a=>a[key]||'').filter(Boolean));
-    html=groups.map(g=>{
-      const gAgs=ags.filter(a=>(a[key]||'')===g);
-      if(!gAgs.length) return '';
-      return `<div class="sb"><div class="sh"><div class="sbar" style="background:${clr[key]}"></div><span class="sname" style="color:${clr[key]}">${g}</span><span class="sbadge">${gAgs.length}</span></div><div class="agrid">${gAgs.map(a=>renderAC(a)).join('')}</div></div>`;
-    }).join('');
-    const unassigned=ags.filter(a=>!(a[key]||''));
-    if(unassigned.length) html+=`<div class="sb"><div class="sh"><div class="sbar" style="background:#9ca3af"></div><span class="sname" style="color:#9ca3af">(unassigned)</span><span class="sbadge">${unassigned.length}</span></div><div class="agrid">${unassigned.map(a=>renderAC(a)).join('')}</div></div>`;
-  } else {
-    // ── UC view (SDLC ON) — getAgs already filters to isSdlcAg agents only ──
-    if(!UCS.length){const tmp=AGENTS;loadFallback();AGENTS=tmp;} // safety: ensure UCS
-    if(vView==='by-stage'||vView==='by-process'){
-      html=renderByDim(vView==='by-stage'?'stage':'process');
-    } else {
-      // by-team / by-role / by-ability: show only SDLC agents grouped
-      const key=vView==='by-role'?'role':vView==='by-ability'?'ability':'team';
-      html=renderAgGrp(key);
-    }
-    // SDLC agents with no UC mapping (orphan) + Non-SDLC agents → show as cards under "Non SDLC"
-    const sdlcOrph=AGENTS.filter(a=>isOrph(a)&&tOk(a));
-    const nonSdlc=AGENTS.filter(a=>!isSdlcAg(a)&&tOk(a));
-    const noUC=[...sdlcOrph,...nonSdlc];
-    if(noUC.length){
-      html+=`<div class="sb"><div class="sh" style="border-bottom-color:#dde1ec"><div class="sbar" style="background:#9ca3af"></div><span class="sname" style="color:#7a85a3">Non SDLC</span><span class="sbadge">${noUC.length}</span></div><div class="agrid">${noUC.map(a=>renderAC(a)).join('')}</div></div>`;
-    }
+  let ags=AGENTS.filter(a=>tOk(a));
+  const key=vView==='by-role'?'role':vView==='by-ability'?'ability':'team';
+  const clr={team:'#1558b0',ability:'#6d28d9',role:'#0b7a68'};
+  // Role can be multi-value: expand groups by individual role
+  let groups,groupAgs;
+  if(key==='role'){
+    groups=uniq(ags.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort();
+    groupAgs=g=>ags.filter(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).includes(g));
+  }else{
+    groups=uniq(ags.map(a=>a[key]||'').filter(Boolean));
+    groupAgs=g=>ags.filter(a=>(a[key]||'')===g);
   }
-
+  let html=groups.map(g=>{
+    const gAgs=groupAgs(g);
+    if(!gAgs.length) return '';
+    return `<div class="sb"><div class="sh"><div class="sbar" style="background:${clr[key]}"></div><span class="sname" style="color:${clr[key]}">${g}</span><span class="sbadge">${gAgs.length}</span></div><div class="agrid">${gAgs.map(a=>renderAC(a)).join('')}</div></div>`;
+  }).join('');
+  const unassigned=ags.filter(a=>!(a[key]||''));
+  if(unassigned.length) html+=`<div class="sb"><div class="sh"><div class="sbar" style="background:#9ca3af"></div><span class="sname" style="color:#9ca3af">(unassigned)</span><span class="sbadge">${unassigned.length}</span></div><div class="agrid">${unassigned.map(a=>renderAC(a)).join('')}</div></div>`;
   el.innerHTML=html||'<div style="text-align:center;padding:50px;color:var(--mu)">No data matching filters</div>';
 }
 
@@ -740,10 +793,21 @@ function renderAgOnly(){
     (orph.length?`<div class="sb"><div class="sh" style="border-bottom-color:#fde68a"><div class="sbar" style="background:#d97706"></div><span class="sname" style="color:#d97706">Not linked (${orph.length})</span></div><div class="agrid">${orph.map(a=>renderAC(a,true)).join('')}</div></div>`:'');
 }
 function renderAC(a,orp=false){
-  return `<div class="ac ${a.type==='agent'?'isag':'issk'} ${orp?'orp':''}"><div class="achdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span><span class="acname">${a.name}</span></div>
+  const st=agentStatus(a);const sd=ST_DEF[st];
+  // Relationship: Skill → part of agent(s); Agent → composed of skills
+  let relHtml='';
+  if(a.type==='skill'){
+    const parts=agentsOfSkill(a);
+    if(parts.length) relHtml=`<div class="acrow"><span class="ack">Part of</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;
+  }else{
+    const sks=skillsOfAgent(a);
+    if(sks.length) relHtml=`<div class="acrow"><span class="ack">Skills</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;
+  }
+  return `<div class="ac ${a.type==='agent'?'isag':'issk'} ${orp?'orp':''}" onclick="openAgentDetail('${esc(a.name)}')" style="cursor:pointer"><div class="achdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span><span class="acname">${a.name}</span><span style="margin-left:auto;font-size:8.5px;font-weight:700;padding:1px 6px;border-radius:3px;background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
     <div class="acrows">
       ${a.team?`<div class="acrow"><span class="ack">Team</span><span class="ttag">${a.team}</span></div>`:''}
       ${a.ucName?`<div class="acrow"><span class="ack">Usecase</span><span style="color:var(--tx2);font-size:11px">${a.ucName}</span></div>`:''}
+      ${relHtml}
       ${a.ability?`<div class="acrow"><span class="ack">Ability</span><span>${a.ability}</span></div>`:''}
       ${a.role?`<div class="acrow"><span class="ack">Role</span><span>${a.role}</span></div>`:''}
       ${a.phase?`<div class="acrow"><span class="ack">Phase</span><span class="ph ${phc(a.phase)}">${a.phase}</span></div>`:''}
@@ -974,9 +1038,15 @@ function openAgentsModal(ags,launch,title){
     :'';
   const agh=ags.map(a=>{
     const ph=phc(a.phase);
+    let relRow='';
+    if(a.type==='skill'){const parts=agentsOfSkill(a);if(parts.length) relRow=`<div class="mrow"><span class="mk">Part of</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;}
+    else{const sks=skillsOfAgent(a);if(sks.length) relRow=`<div class="mrow"><span class="mk">Skills</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;}
+    const descRow=a.desc&&a.desc!=='TBC'?`<div class="mrow" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="mk">Description</span><span style="color:var(--tx2);font-size:11px;line-height:1.45">${a.desc.replace(/<br\s*\/?>/gi,' ')}</span></div>`:'';
     return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
+      ${descRow}
       <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
       <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
+      ${relRow}
       <div class="mrow"><span class="mk">Phase</span><span class="ph ${ph}">${a.phase||'—'}</span></div>
       <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
       <div class="mrow"><span class="mk">Role</span><span>${a.role||'—'}</span></div>
@@ -1094,7 +1164,9 @@ const ADOPT_GROUPS=[
       {id:'10.1',name:'Development'},{id:'10.2',name:'Unit Test'},
       {id:'10.3',name:'Code Review'},{id:'10.4',name:'Test Support'},
       {id:'B.NFR',name:'NFR Gathering'},{id:'B.PTS',name:'Performance Test Scripting'},
+      {id:'B.PTX',name:'Performance Test Execution'},
       {id:'B.PSD',name:'Penetration Test Scenario Development'},{id:'B.PTE',name:'Penetration Test Execution'},
+      {id:'B.PTR',name:'Penetration Test Report'},
       {id:'B.EP',name:'Environment Provisioning'},{id:'B.CD',name:'CI/CD Pipeline Development'},
       {id:'B.DD',name:'Data Development'},{id:'B.DTS',name:'Data Test Support'},
     ]},
@@ -1113,9 +1185,9 @@ const ADOPT_GROUPS=[
   {label:'After Development',color:'#1a2e50',merged:true,sub:[
     {label:'POST DEVELOPMENT',color:'#9d174d',bg:'#9d174d12',stage:'Post Development',procs:[
       {id:'PD.IM',name:'Incident Management'},{id:'PD.PM',name:'Problem Management'},
-      {id:'PD.E2E',name:'E2E Monitoring'},{id:'PD.CP',name:'Capacity Planning'},
       {id:'PD.FO',name:'FinOps'},{id:'PD.CM',name:'Capacity Monitoring'},
-      {id:'PD.SR',name:'Self Repairing'},
+      {id:'PD.SR',name:'Self Repairing'},{id:'PD.E2E',name:'E2E Monitoring'},
+      {id:'PD.CP',name:'Capacity Planning'},
     ]},
   ]},
 ];
@@ -1123,58 +1195,47 @@ const ADOPT_GROUPS=[
 function getAgentStatuses(procId){
   const ags=visAgents().filter(a=>hasProcessId(a,procId));
   const statuses={ns:0,td:0,ip:0,pilot:0,ru:0};
-  ags.forEach(a=>{
-    if((a.phase||'').toLowerCase()==='production'&&a.progress>=100) statuses.ru++;
-    else if((a.phase||'').toLowerCase()==='pilot'&&a.progress>80) statuses.pilot++;
-    else if(a.progress>0) statuses.ip++;
-    else statuses.td++;
-  });
+  ags.forEach(a=>{statuses[agentStatus(a)]++;});
   return statuses;
 }
 
 function adoptStatus(procId){
   const ags=visAgents().filter(a=>hasProcessId(a,procId));
   if(!ags.length) return 'ns';
-  const isReady=ags.some(a=>
-    (a.phase||'').toLowerCase()==='production'&&
-    (a.progress>=100)
-  );
-  if(isReady) return 'ru';
-  const isPilot=ags.some(a=>
-    (a.phase||'').toLowerCase()==='pilot'&&
-    (a.progress>80)
-  );
-  if(isPilot) return 'pilot';
-  if(ags.some(a=>a.progress>0)) return 'ip';
-  return 'td';
+  if(ags.some(a=>agentStatus(a)==='ru')) return 'ru';
+  if(ags.some(a=>agentStatus(a)==='pilot')) return 'pilot';
+  if(ags.some(a=>agentStatus(a)==='ip')) return 'ip';
+  if(ags.some(a=>agentStatus(a)==='td')) return 'td';
+  return 'ns';
 }
 
 function renderAdopt(){
+  buildCtrlAdopt();
   const board=document.getElementById('adopt-board');
+  const ucEl=document.getElementById('main-adopt-uc');
+  const titleTxt=document.getElementById('adopt-title-txt');
+  const titleSub=document.getElementById('adopt-title-sub');
   if(!board) return;
 
-  // Count statuses across all processes
-  const counts={ns:0,td:0,ip:0,pilot:0,ru:0};
-  const allProcs=ADOPT_GROUPS.flatMap(g=>g.sub.flatMap(s=>s.procs));
-  allProcs.forEach(p=>{counts[adoptStatus(p.id)]++;});
+  // Shared status legend: count agents/skills (scoped to search) by unified status
+  renderStatusLegend('adopt-status-legend',visAgents());
 
-  // Update legend with counts
-  const legendEl=document.getElementById('adopt-legend-row');
-  if(legendEl){
-    const total=allProcs.length;
-    legendEl.innerHTML=[
-      {cls:'ns',label:'Not Start',n:counts.ns},
-      {cls:'td',label:'To Do',n:counts.td},
-      {cls:'ip',label:'In Progress',n:counts.ip},
-      {cls:'pilot',label:'Pilot',n:counts.pilot},
-      {cls:'ru',label:'Ready to Use',n:counts.ru},
-    ].map(({cls,label,n})=>`
-      <div class="aleg-item aleg-${cls}">
-        <span class="aleg-dot"></span>
-        <span>${label}</span>
-        <span class="aleg-cnt">${n}</span>
-      </div>`).join('');
+  // ── SDLC ON → Usecase view (card grid like the old Agent Library SDLC view) ──
+  if(vSDLC){
+    board.style.display='none';
+    ucEl.style.display='';
+    if(titleTxt) titleTxt.textContent='SDLC Use Case Coverage';
+    if(titleSub) titleSub.textContent=vAdoptView==='by-process'?'Use cases grouped by SDLC process':'Use cases grouped by SDLC stage';
+    if(!UCS.length){const tmp=AGENTS;loadFallback();AGENTS=tmp;}
+    ucEl.innerHTML=renderByDim(vAdoptView==='by-process'?'process':'stage')||'<div style="text-align:center;padding:50px;color:var(--mu)">No data matching filters</div>';
+    return;
   }
+
+  // ── SDLC OFF → Process board (default) ──
+  board.style.display='';
+  ucEl.style.display='none';
+  if(titleTxt) titleTxt.textContent='SDLC Process Overview';
+  if(titleSub) titleSub.textContent='AI Adoption status across SDLC processes';
 
   // Render board
   board.innerHTML=ADOPT_GROUPS.map(grp=>{
@@ -1182,34 +1243,38 @@ function renderAdopt(){
     const subcols=grp.sub.map(sub=>{
       const cards=sub.procs.map(proc=>{
         const ags=visAgents().filter(a=>hasProcessId(a,proc.id));
+        // Has-agent filter: skip empty process cards
+        if(vHasAgent&&!ags.length) return '';
         const statuses=getAgentStatuses(proc.id);
-        
+
         // Find dominant status (most agents)
         const statusArray=[
           {status:'ru',count:statuses.ru,label:'Ready'},
           {status:'pilot',count:statuses.pilot,label:'Pilot'},
           {status:'ip',count:statuses.ip,label:'In Progress'},
           {status:'td',count:statuses.td,label:'To Do'},
-          {status:'ns',count:statuses.ns,label:'Not Started'}
+          {status:'ns',count:statuses.ns,label:'Not Start'}
         ];
         const dominant=statusArray.reduce((a,b)=>a.count>b.count?a:b);
         const dominantStatus=dominant.count>0?dominant.status:'ns';
-        
+        const empty=!ags.length;
+
         // Add accent bar if: dominant is 'td' AND there are agents in progress (or higher)
         const hasProgress=statuses.ip>0||statuses.pilot>0||statuses.ru>0;
-        const cardClass=dominantStatus==='td'&&hasProgress?`${dominantStatus} has-progress`:dominantStatus;
-        
+        const cardClass=(dominantStatus==='td'&&hasProgress?`${dominantStatus} has-progress`:dominantStatus)+(empty?' empty':'');
+
         // Build breakdown text (only non-zero statuses)
         const breakdown=statusArray.filter(s=>s.count>0).map(s=>`${s.count} ${s.label}`).join(', ');
         const icon={ns:'○',td:'◦',ip:'●',pilot:'◆',ru:'✓'};
-        
+
         return `<div class="aproc ${cardClass}" onclick="adoptClick('${proc.id}','${esc(proc.name)}')">
           <div class="aproc-num">${proc.id}</div>
           <div class="aproc-name">${proc.name}</div>
-          <div class="aproc-count">${icon[dominantStatus]} ${breakdown||'No agents'}</div>
+          <div class="aproc-count">${empty?'<span style="color:#9ca3af">No agents</span>':icon[dominantStatus]+' '+breakdown}</div>
         </div>`;
       }).join('');
-      // When group is merged: sub-header uses dark navy like top-level groups, height = grp-hdr + sub-hdr combined
+      // Hide subcolumn entirely if has-agent filter removed all its cards
+      if(vHasAgent&&!cards.trim()) return '';
       const subHdr = grp.merged
         ? `<div class="adopt-grp-hdr" style="min-height:70.5px;display:flex;align-items:center;justify-content:center;writing-mode:horizontal-tb">${sub.label}</div>`
         : `<div class="adopt-sub-hdr" style="background:${sub.bg};color:${sub.color};border-bottom:2px solid ${sub.color}40">${sub.label}</div>`;
@@ -1218,7 +1283,7 @@ function renderAdopt(){
         <div class="adopt-cards">${cards}</div>
       </div>`;
     }).join('');
-    // Merged groups: no top group header row
+    if(vHasAgent&&!subcols.trim()) return '';
     if(grp.merged){
       return `<div class="adopt-grp" style="flex:${grpCols}">
         <div class="adopt-sub-row" style="flex:1">${subcols}</div>
@@ -1235,6 +1300,11 @@ function adoptClick(procId,procName){
   const ags=visAgents().filter(a=>hasProcessId(a,procId));
   if(!ags.length){showToast(`No ${vSearch?'matching ':''}agents for ${procId} ${procName}`,'i');return;}
   openAgentsModal(ags,null,`${procId} — ${procName}`);
+}
+function openAgentDetail(name){
+  const a=AGENTS.find(x=>x.name===name);
+  if(!a) return;
+  openAgentsModal([a],a.launch,a.name);
 }
 
 loadData();
