@@ -185,11 +185,6 @@ select.dd:focus{border-color:var(--ag)}
 .adopt-subcol:last-child{border-right:none}
 .adopt-sub-hdr{text-align:center;font-weight:700;font-size:10px;padding:7px 6px;letter-spacing:.04em;white-space:nowrap}
 .adopt-cards{padding:6px;display:flex;flex-direction:column;gap:5px;background:var(--bg);flex:1}
-/* Multi-column variant: several narrow mini-columns (grouped by process-number prefix) sit
-   side-by-side under ONE shared sub-header — matches the reference layout for DESIGN/BUILD/TEST. */
-.adopt-cards-multi{flex-direction:row;align-items:stretch;gap:0;padding:6px 0}
-.adopt-minicol{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;padding:0 6px;border-right:1px dashed var(--bd)}
-.adopt-minicol:last-child{border-right:none}
 .aproc{padding:8px 9px;border-radius:7px;cursor:pointer;transition:all .15s;border:1.5px solid}
 .aproc:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.13)}
 .aproc.ns{background:#fff;border-color:#e5e7eb}
@@ -468,46 +463,53 @@ async function loadData(){
 }
 
 function loadFallback(){
-  const FB=[['Initiation','1.1 Feasibility Study','System Impact & Diagram Assistant'],['Initiation','1.2 Deep Research & Benchmark','Business Research Support Tool','User Screen Generator','Financial Projection Support Tool'],['Initiation','1.3 Proposal and TOR','Vendor Proposal Compliance Validator','Vendor Sourcing & Qualification Assistant','MoM Generator','Contract Validator Assistant','Contract Monitoring Assistant'],['Initiation','1.4 Legal & Compliance','Requirement Refiner Assistant','Requirement Change Navigator'],['Initiation','1.5 Requirement Exploration','Requirement Refiner Assistant'],['Initiation','1.6 Project Initiation & Resource Planning','PC Document Control Assistant','MoM Generator','Open Issue Tracker'],['Discovery','2.1 Requirement Gathering','Requirement Refiner Assistant','MoM Generator','Open Issue Tracker'],['Discovery','2.2 High-Level User Story Development','User Story & Epic Generator','User Story Change Tracker','User Story Curator','MoM Generator','Open Issue Tracker'],['Design','3.1 User Experience Research','Research Insight Centralization','Research Insight Analyzer','Research Report Generator','Research Prep Assistant'],['Design','3.2 User Journey Design','Initial User Journey Creation','Cross-Team Feedback Management'],['Design','3.3 User Interface Design (Low-Fi)','Design Input Readiness','Draft Copy Assistant','Cross-Team Feedback Management'],['Design','4.1 High-Level Design','System Design Gap & Impacts Analyzer','System Design Initiator','System Design Updater'],['Design','4.2 Effort Estimation','System Design Inventory Consolidator','System Design Estimator'],['Design','5.1 Data Insight & Analysis','Data Specification Assistant','Data Analytics Assistant'],['Design','6.1 Ideation & Planning','JO Deck Generator','PC Document Control Assistant','Project Stakeholder Directory Assistant','Detailed Project Timeline Assistant'],['Design','6.2 Project Governance & Development Support','MoM Generator','Timeline Change Detector and Risk Validation'],['Design','7.1 Detailed User Story Development','User Story Readiness','Business and Functional Design Summarizer'],['Design','7.2 Development Support','User Story Curator','UXW Change Tracker Assistant','MoM Generator'],['Design','7.3 Test Support','User Story Curator','UXW Change Tracker Assistant','Test Case Generation & Fulfillment','Critical Defect Alert','Defect Severity and Priority Assessment'],['Design','7.4 Deployment Support','Release Scope Summarizer'],['Design','8.1 User Interface Design (Hi-Fi)','Design Input Readiness','Design System Updates','Hi-Fi Design Quality Check','Cross-Team Feedback Management'],['Design','8.2 Copywriting','UXW Style Guide Creation','UXW Scope & Effort Estimation','UXW Style Guide Alignment','UXW Change Tracker Assistant'],['Design','9.1 Detailed Design','Entity Detailed Designer','API Detailed Designer'],['Build','10.1 Development','Assist Write Code Build Locally','Assisted Code Review'],['Build','10.2 Unit Test','Assist Write Code Build Locally'],['Build','10.3 Code Review','Assisted Code Review','Assisted Senior Code Review'],['Build','10.4 Test Support','Test Data Setup and Teardown Scripts','Root Cause Analysis and Fix Suggestion for Defects'],['Test','11.1 Test Approach','Document Change Detection','Test Scope Definition and Validation'],['Test','11.2 Test Case Development','Knowledge Base Agent (Test Management)','Test Case Generation & Fulfillment','Change Impact & Re-work Minimization'],['Test','11.3 Defect Management','Defect Triage & Quality Validator','Duplicate & Related Defect Detector','Defect Severity and Priority Assessment'],['Test','12.1 SIT - Test Data Preparation','Centralized Document Assistant','Test Data Access Assistant','Test Data Validator','Self-service test data creation'],['Test','12.2 SIT - Test Execution','Test Execution Optimizer','Test Artifact Synchronization','Progress Advisor','Daily Summary & Progress Report'],['Test','13.1 UAT - Test Data Preparation','Self-service test data creation','Test Data Generator','Test Data Access Assistant','Test Data Validator','Centralized Document Assistant'],['Test','13.2 UAT - Test Execution','Test Execution Optimizer','Test Artifact Synchronization','Progress Advisor','Daily Summary & Progress Report'],['Deployment','14.1 Runbook Development','Runbook Items Initiator','Runbook Reviewer'],['Deployment','14.2A IVT Test Case Development','IVT Test Case Auto-Generator'],['Deployment','14.2B PVT Test Case Development','PVT Test Case Generator'],['Deployment','14.3A IVT Test Case Execution','IVT Test Execution Assistant, Logger & Progress Reporter'],['Deployment','14.3B PVT Test Case Execution','IVT Test Execution Assistant, Logger & Progress Reporter','Test Artifact Synchronization'],['Deployment','14.4 CAB Document & Presentation','Change Ticket & CAB Preparation Assistant']];
+  const FB=[['Initiation','1.1 Feasibility Study','System Impact & Diagram Assistant'],['Initiation','1.2 Deep Research & Benchmark','Business Research Support Tool','User Screen Generator','Financial Projection Support Tool'],['Initiation','1.3 Proposal and TOR','Vendor Proposal Compliance Validator','Vendor Sourcing & Qualification Assistant','MoM Generator','Contract Validator Assistant','Contract Monitoring Assistant'],['Initiation','1.4 Legal & Compliance','Requirement Refiner Assistant','Requirement Change Navigator'],['Initiation','1.5 Requirement Exploration','Requirement Refiner Assistant'],['Initiation','1.6 Project Initiation & Resource Planning','PC Document Control Assistant','MoM Generator','Open Issue Tracker'],['Discovery','2.1 Requirement Gathering','Requirement Refiner Assistant','MoM Generator','Open Issue Tracker'],['Discovery','2.2 High-level User Story Development','User Story & Epic Generator','User Story Change Tracker','User Story Curator','MoM Generator','Open Issue Tracker'],['Design','3.1 User Experience Research','Research Insight Centralization','Research Insight Analyzer','Research Report Generator','Research Prep Assistant'],['Design','3.2 User Journey Design','Initial User Journey Creation','Cross-Team Feedback Management'],['Design','3.3 User Interface Design (Low-fi)','Design Input Readiness','Draft Copy Assistant','Cross-Team Feedback Management'],['Design','4.1 High-level Design','System Design Gap & Impacts Analyzer','System Design Initiator','System Design Updater'],['Design','4.2 Effort Estimation','System Design Inventory Consolidator','System Design Estimator'],['Design','5.1 Data Insight & Analysis','Data Specification Assistant','Data Analytics Assistant'],['Design','6.1 Ideation & Planning','JO Deck Generator','PC Document Control Assistant','Project Stakeholder Directory Assistant','Detailed Project Timeline Assistant'],['Design','6.2 Project Governance','MoM Generator','Timeline Change Detector and Risk Validation'],['Design','7.1 Detailed User Story Development','User Story Readiness','Business and Functional Design Summarizer'],['Design','7.2 Development Support','User Story Curator','UXW Change Tracker Assistant','MoM Generator'],['Design','7.3 Test Support','User Story Curator','UXW Change Tracker Assistant','Test Case Generation & Fulfillment','Critical Defect Alert','Defect Severity and Priority Assessment'],['Design','7.4 Deployment Support','Release Scope Summarizer'],['Design','8.1 User Interface Design (Hi-fi)','Design Input Readiness','Design System Updates','Hi-Fi Design Quality Check','Cross-Team Feedback Management'],['Design','8.2 Copywriting','UXW Style Guide Creation','UXW Scope & Effort Estimation','UXW Style Guide Alignment','UXW Change Tracker Assistant'],['Design','9.1 Detailed Design','Entity Detailed Designer','API Detailed Designer'],['Build','10.1 Development','Assist Write Code Build Locally','Assisted Code Review'],['Build','10.2 Unit Test','Assist Write Code Build Locally'],['Build','10.3 Code Review','Assisted Code Review','Assisted Senior Code Review'],['Build','10.4 Test Support','Test Data Setup and Teardown Scripts','Root Cause Analysis and Fix Suggestion for Defects'],['Test','11.1 Test Approach','Document Change Detection','Test Scope Definition and Validation'],['Test','11.2 Test Case Development','Knowledge Base Agent (Test Management)','Test Case Generation & Fulfillment','Change Impact & Re-work Minimization'],['Test','11.3 Defect Management','Defect Triage & Quality Validator','Duplicate & Related Defect Detector','Defect Severity and Priority Assessment'],['Test','12.1 SIT Test Data Preparation','Centralized Document Assistant','Test Data Access Assistant','Test Data Validator','Self-service test data creation'],['Test','12.2 SIT Test Execution','Test Execution Optimizer','Test Artifact Synchronization','Progress Advisor','Daily Summary & Progress Report'],['Test','13.1 UAT Test Data Preparation','Self-service test data creation','Test Data Generator','Test Data Access Assistant','Test Data Validator','Centralized Document Assistant'],['Test','13.2 UAT Test Execution','Test Execution Optimizer','Test Artifact Synchronization','Progress Advisor','Daily Summary & Progress Report'],['Deployment','14.1 Runbook Development','Runbook Items Initiator','Runbook Reviewer'],['Deployment','14.2A IVT Test Case Development','IVT Test Case Auto-Generator'],['Deployment','14.2B PVT Test Case Development','PVT Test Case Generator'],['Deployment','14.3A IVT Test Case Execution','IVT Test Execution Assistant, Logger & Progress Reporter'],['Deployment','14.3B PVT Test Case Execution','IVT Test Execution Assistant, Logger & Progress Reporter','Test Artifact Synchronization'],['Deployment','14.4 CAB Document & Presentation','Change Ticket & CAB Preparation Assistant']];
   UCS=[];for(const[s,p,...us] of FB) for(const n of us) if(n) UCS.push({stage:s,process:p,name:n});
   AGENTS=[
-    {name:'Epic Writer',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Testing',progress:70,launch:'3/15/2026',owner:'Tanyarat R.',ability:'Documentation',role:'BA, PO'},
-    {name:'User Story Writer',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Testing',progress:70,launch:'6/1/2026',owner:'Tanyarat R.',ability:'Documentation',role:'BA'},
-    {name:'Product Inquiry Agent',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Build',progress:30,launch:'6/30/2026',owner:'Tanyarat R.',ability:'Documentation',role:'BA'},
-    {name:'UX Writer AI Agent',type:'agent',team:'Digital Experience',ucName:'UXW Style Guide Alignment',ucProcess:'8.2 Copywriting',stage:'Design',phase:'Build',progress:0,launch:'8/1/2026',owner:'Chanchai C.',ability:'Documentation',role:'UX Writer'},
-    {name:'po-ba',type:'agent',team:'Development',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth R.',ability:'Documentation',role:'PO/BA'},
-    {name:'system-architect',type:'agent',team:'Development',ucName:'System Design Initiator',ucProcess:'4.1 High-Level Design',stage:'Design',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth R.',ability:'Decision Making',role:'SA'},
-    {name:'tech-lead',type:'agent',team:'Development',ucName:'Assisted Senior Code Review',ucProcess:'10.3 Code Review',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth R.',ability:'Project Management',role:'Tech Lead'},
-    {name:'tester (QA)',type:'agent',team:'Development',ucName:'Test Case Generation & Fulfillment',ucProcess:'11.2 Test Case Development',stage:'Test',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth R.',ability:'Testing & QA',role:'Tester'},
-    {name:'be-dev (Golang TDD)',type:'agent',team:'Development',ucName:'Assist Write Code Build Locally',ucProcess:'10.1 Development',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth R.',ability:'Code Generation',role:'Backend Engineer'},
-    {name:'fe-dev (Next.js TDD)',type:'agent',team:'Development',ucName:'Assist Write Code Build Locally',ucProcess:'10.1 Development',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth R.',ability:'Code Generation',role:'Frontend Engineer'},
-    {name:'Daily Summary & Progress Report',type:'agent',team:'PQA',ucName:'Daily Summary & Progress Report',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'6/30/2026',owner:'Pailin K.',ability:'Documentation',role:'Test Management'},
-    {name:'Knowledge Base Agent',type:'agent',team:'PQA',ucName:'Knowledge Base Agent (Test Management)',ucProcess:'11.2 Test Case Development',stage:'Test',phase:'Design',progress:0,launch:'6/30/2026',owner:'Pailin K.',ability:'Testing & QA',role:'Tester'},
-    {name:'Change Impact & Re-work Minimization',type:'agent',team:'PQA',ucName:'Change Impact & Re-work Minimization',ucProcess:'11.2 Test Case Development',stage:'Test',phase:'Design',progress:0,launch:'6/30/2026',owner:'Nutchanad S.',ability:'Testing & QA',role:'UAT Test'},
-    {name:'Update Execution Results',type:'agent',team:'PQA',ucName:'Test Execution Optimizer',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'6/30/2026',owner:'Thitiworrakarn K.',ability:'Testing & QA',role:'UAT'},
-    {name:'Test Artifact Synchronization',type:'agent',team:'PQA',ucName:'Test Artifact Synchronization',ucProcess:'12.2 SIT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'6/30/2026',owner:'Thanakrit K.',ability:'Testing & QA',role:'UAT'},
-    {name:'Detailed Project Tasks Retriever',type:'agent',team:'Delivery Manager',ucName:'Detailed Project Timeline Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'6/5/2026',owner:'Namphon F.',ability:'Project Management',role:'Delivery Manager'},
-    {name:'Detailed Project Timeline Generator',type:'skill',team:'Delivery Manager',ucName:'Detailed Project Timeline Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'6/26/2026',owner:'Namphon F.',ability:'Project Management',role:'Delivery Manager'},
-    {name:'Project Stakeholder Directory',type:'skill',team:'Delivery Manager',ucName:'Project Stakeholder Directory Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'7/10/2026',owner:'Namphon F.',ability:'Project Management',role:'Delivery Manager'},
-    {name:'Timeline Change Detector',type:'agent',team:'Delivery Manager',ucName:'Timeline Change Detector and Risk Validation',ucProcess:'6.2 Project Governance & Development Support',stage:'Design',phase:'Idea',progress:0,launch:'7/24/2026',owner:'Namphon F.',ability:'Project Management',role:'Delivery Manager'},
-    {name:'PC Document Control Assistant',type:'skill',team:'Delivery Manager',ucName:'PC Document Control Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'8/7/2026',owner:'Namphon F.',ability:'Documentation',role:'Delivery Manager'},
-    {name:'JO Deck Generator',type:'skill',team:'Delivery Manager',ucName:'JO Deck Generator',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'8/31/2026',owner:'Namphon F.',ability:'Documentation',role:'Delivery Manager'},
-    {name:'Requirement Refiner Assistant',type:'agent',team:'BA',ucName:'Open Issue Tracker',ucProcess:'2.1 Requirement Gathering',stage:'Discovery',phase:'Idea',progress:0,launch:'6/30/2026',owner:'Wimolrat C.',ability:'Analytical',role:'BA'},
-    {name:'Code Review Assistant',type:'agent',team:'Develop',ucName:'Assisted Code Review',ucProcess:'10.3 Code Review',stage:'Build',phase:'Pilot',progress:90,launch:'6/26/2026',owner:'Navanit A.',ability:'Decision Making',role:'Developer'},
-    {name:'Unit Test Generator',type:'skill',team:'Develop',ucName:'Assist Write Code Build Locally',ucProcess:'10.2 Unit Test',stage:'Build',phase:'Pilot',progress:90,launch:'6/26/2026',owner:'Navanit A.',ability:'Utility',role:'Developer'},
-    {name:'RCA Fix Assistant',type:'agent',team:'Develop',ucName:'Root Cause Analysis and Fix Suggestion for Defects',ucProcess:'10.4 Test Support',stage:'Build',phase:'Testing',progress:70,launch:'6/26/2026',owner:'Navanit A.',ability:'Decision Making',role:'Developer'},
-    {name:'API Detailed Designer',type:'skill',team:'Develop',ucName:'API Detailed Designer',ucProcess:'9.1 Detailed Design',stage:'Design',phase:'Pilot',progress:90,launch:'7/10/2026',owner:'Navanit A.',ability:'Documentation',role:'Dev Lead'},
-    {name:'System Impact Analyzer',type:'agent',team:'Develop',ucName:'System Design Gap & Impacts Analyzer',ucProcess:'4.1 High-Level Design',stage:'Design',phase:'Pilot',progress:90,launch:'8/14/2026',owner:'Navanit A.',ability:'Decision Making',role:'Dev Lead'},
+{name:'Epic Writer',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Testing',progress:70,launch:'3/15/2026',owner:'Tanyarat Ruedeesirichot',ability:'Documentation',role:'BA , PO'},
+    {name:'User Story Writer',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Testing',progress:70,launch:'6/1/2026',owner:'Tanyarat Ruedeesirichot',ability:'Documentation',role:'BA'},
+    {name:'Product Inquiry Agent (Story Maker Chat agent)',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Build',progress:30,launch:'6/30/2026',owner:'Tanyarat Ruedeesirichot',ability:'Documentation',role:'BA'},
+    {name:'UX Writer AI Agent (VB)',type:'agent',team:'Digital Experience Team',ucName:'UXW Style Guide Alignment',ucProcess:'8.2 Copywriting',stage:'Design',phase:'Build',progress:60,launch:'8/1/2026',owner:'Chanchai Chotwiriya',ability:'Documentation',role:'UX Writer, UX Designer, UI Designer'},
+    {name:'po-ba (Product Owner / BA)',type:'agent',team:'Development',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Documentation',role:'PO/BA'},
+    {name:'system-architect',type:'agent',team:'Development',ucName:'System Design Initiator',ucProcess:'4.1 High-Level Design',stage:'Design',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Decision Making',role:'SA'},
+    {name:'tech-lead (Scrum Master + Code Gatekeeper)',type:'agent',team:'Development',ucName:'Assisted Senior Code Review',ucProcess:'10.3 Code Review',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Project Management',role:'Tech Lead'},
+    {name:'tester (QA)',type:'agent',team:'Development',ucName:'Test Case Generation & Fulfillment',ucProcess:'11.2 Test Case Development',stage:'Test',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Testing & QA',role:'Tester'},
+    {name:'be-dev (Golang TDD Worker)',type:'agent',team:'Development',ucName:'Assist Write Code Build Locally',ucProcess:'10.1 Development',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Code Generation',role:'Backend Engineer'},
+    {name:'fe-dev (Next.js CSR TDD Worker)',type:'agent',team:'Development',ucName:'Assist Write Code Build Locally',ucProcess:'10.1 Development',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Code Generation',role:'Frontend Engineer'},
+    {name:'Daily Summary & Progress Report',type:'agent',team:'PQA',ucName:'Daily Summary & Progress Report',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'8/31/2026',owner:'Pailin Kurasirikul, Prathana Nithasanacharukul',ability:'Documentation',role:'Test management'},
+    {name:'Knowledge Base Agent',type:'agent',team:'PQA',ucName:'Knowledge Base Agent (Test Management)',ucProcess:'11.2 Test Case Development',stage:'Test',phase:'Design',progress:50,launch:'8/31/2026',owner:'Pailin Kurasirikul, Prathana Nithasanacharukul',ability:'Testing & QA',role:'Tester'},
+    {name:'Change Impact & Re-work Minimization',type:'agent',team:'PQA',ucName:'Test Execution Optimizer',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:10,launch:'8/31/2026',owner:'Nutchanad Satiarujikanon, Prathana Nithasanacharukul',ability:'Testing & QA',role:'UAT Test'},
+    {name:'Update execution results and evidence',type:'agent',team:'PQA',ucName:'Test Execution Optimizer',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'8/31/2026',owner:'Thitiworrakarn Kittithanawan, Somjate Tantod',ability:'Testing & QA',role:'UAT'},
+    {name:'Test Artifact Synchronization',type:'agent',team:'PQA',ucName:'Test Artifact Synchronization',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'8/31/2026',owner:'Thanakrit Kitpiboon, Kritsanaluk Piriyacherdchoochai',ability:'Testing & QA',role:'UAT'},
+    {name:'Detailed Project Tasks Retriever (From JIRA)',type:'agent',team:'Delivery Manager',ucName:'Detailed Project Timeline Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Dev',progress:70,launch:'6/12/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'Detailed Project Timeline Generator (by Standard Excel Template)',type:'agent',team:'Delivery Manager',ucName:'Detailed Project Timeline Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'6/30/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'Project Stakeholder Directory Assistant',type:'agent',team:'Delivery Manager',ucName:'Project Stakeholder Directory Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'7/31/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'Timeline Change Detector and Risk Validation',type:'agent',team:'Delivery Manager',ucName:'Timeline Change Detector and Risk Validation',ucProcess:'6.2 Project Governance & Development Support',stage:'Design',phase:'Idea',progress:0,launch:'8/31/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'PC Document Control Assistant',type:'agent',team:'Delivery Manager',ucName:'PC Document Control Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'9/30/2026',owner:'Namphon Faksuwan et al',ability:'Documentation',role:'Delivery Manager'},
+    {name:'JO Deck Generator',type:'agent',team:'Delivery Manager',ucName:'JO Deck Generator',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'9/30/2026',owner:'Namphon Faksuwan et al',ability:'Documentation',role:'Delivery Manager'},
+    {name:'Requirement Refiner Assistant',type:'agent',team:'BA',ucName:'Open Issue Tracker',ucProcess:'2.1 Requirement Gathering',stage:'Discovery',phase:'Idea',progress:10,launch:'6/30/2026',owner:'Wimolrat Chotipaisarngul',ability:'Analytical',role:'BA'},
+    {name:'Open Issue Tracker',type:'agent',team:'BA',stage:'Discovery',progress:0,launch:'7/31/2026',owner:'Wimolrat Chotipaisarngul',role:'BA'},
+    {name:'Code Review Assistant',type:'agent',team:'Develop',ucName:'Assisted Code Review',ucProcess:'10.3 Code Review',stage:'Build',phase:'Pilot',progress:90,launch:'6/26/2026',owner:'Navanit Akra Sisuk',ability:'Decision Making',role:'Developer'},
+    {name:'Unit Test Generator',type:'skill',team:'Develop',ucName:'Assist Write Code Build Locally',ucProcess:'10.2 Unit Test',stage:'Build',phase:'Pilot',progress:90,launch:'6/26/2026',owner:'Navanit Akra Sisuk',ability:'Utility',role:'Developer'},
+    {name:'RCA Fix Assistant',type:'agent',team:'Develop',ucName:'Root Cause Analysis and Fix Suggestion for Defects',ucProcess:'10.4 Test Support',stage:'Build',phase:'Testing',progress:70,launch:'6/26/2026',owner:'Navanit Akra Sisuk',ability:'Decision Making',role:'Developer'},
+    {name:'API Detailed Designer',type:'skill',team:'Develop',ucName:'API Detailed Designer',ucProcess:'9.1 Detailed Design',stage:'Design',phase:'Pilot',progress:90,launch:'7/10/2026',owner:'Navanit Akra Sisuk',ability:'Documentation',role:'Dev Lead'},
+    {name:'System Impact Analyzer',type:'agent',team:'Develop',ucName:'System Design Gap & Impacts Analyzer',ucProcess:'4.1 High-Level Design',stage:'Design',phase:'Pilot',progress:90,launch:'8/14/2026',owner:'Navanit Akra Sisuk',ability:'Decision Making',role:'Dev Lead'},
   ];
 }
 
 // ── HELPERS ──
 const isSdlcAg=a=>!!(a.stage&&a.stage.trim()); // non-empty SDLC Stage = is SDLC agent
-// SDLC Process Mapping can now contain multiple comma-separated values, e.g. "10.1 Development,10.3 Code Review"
-// Returns array of process-ID prefixes (e.g. ["10.1","10.3"])
+// SDLC Process Mapping can be multi-value (comma-separated), e.g. "10.1 Development,10.3 Code Review".
+// Most values have a numeric prefix like "10.1 Development" -> id "10.1". Some special processes
+// (no SDLC number, e.g. "NFR Gathering", "Incident Management") have no numeric prefix at all —
+// for those the FULL trimmed string is the id.
 function agentProcessIds(a){
   if(!a.ucProcess) return [];
-  return a.ucProcess.split(',').map(p=>p.trim().split(' ')[0]).filter(Boolean);
+  return a.ucProcess.split(',').map(p=>{
+    const t=p.trim();
+    const m=t.match(/^(\d+\.\d+[A-Za-z]?)\b/);
+    return m?m[1]:t; // numeric prefix if present, else the whole string is the id
+  }).filter(Boolean);
 }
 function hasProcessId(a,procId){
   return agentProcessIds(a).includes(procId);
@@ -1151,6 +1153,9 @@ function showToast(msg,t='i'){const el=document.getElementById('toast');el.textC
 
 
 // ── AI ADOPTION PAGE ──
+// Process list & order is grounded in the "Sheet3" reference (Group/Stage/Process/Use Case columns),
+// read top-to-bottom per stage. Each stage renders as ONE flat vertical list (lane), matching the
+// reference exactly. Header labels (top dark band + colored sub-band) are unchanged from before.
 const ADOPT_GROUPS=[
   {label:'Discovery',color:'#1a2e50',sub:[
     {label:'INITIATION',color:'#1558b0',bg:'#1558b020',stage:'Initiation',procs:[
@@ -1163,26 +1168,32 @@ const ADOPT_GROUPS=[
     ]},
   ]},
   {label:'Development',color:'#1a2e50',sub:[
-    {label:'DESIGN',color:'#6d28d9',bg:'#6d28d915',stage:'Design',cols:[
-      [{id:'3.1',name:'User Experience Research'},{id:'3.2',name:'User Journey Design'},{id:'3.3',name:'User Interface Design (Low-fi)'}],
-      [{id:'4.1',name:'High-level Design'},{id:'4.2',name:'Effort Estimation'}],
-      [{id:'5.1',name:'Data Insight & Analysis'},{id:'D.DRG',name:'Data Requirement Gathering'}],
-      [{id:'6.1',name:'Ideation & Planning'},{id:'6.2',name:'Project Governance'}],
-      [{id:'7.1',name:'Detailed User Story Development'},{id:'7.2',name:'Development Support'},{id:'7.3',name:'Test Support'},{id:'7.4',name:'Deployment Support'}],
-      [{id:'8.1',name:'User Interface Design (Hi-fi)'},{id:'8.2',name:'Copywriting'}],
-      [{id:'9.1',name:'Detailed Design'},{id:'D.DO',name:'DevOps'}],
+    {label:'DESIGN',color:'#6d28d9',bg:'#6d28d915',stage:'Design',procs:[
+      {id:'3.1',name:'User Experience Research'},{id:'3.2',name:'User Journey Design'},
+      {id:'3.3',name:'User Interface Design (Low-fi)'},{id:'4.1',name:'High-level Design'},
+      {id:'4.2',name:'Effort Estimation'},{id:'5.1',name:'Data Insight & Analysis'},
+      {id:'Data Requirement Gathering',name:'Data Requirement Gathering'},{id:'DevOps',name:'DevOps'},
     ]},
-    {label:'BUILD',color:'#0b7a68',bg:'#0b7a6815',stage:'Build',cols:[
-      [{id:'10.1',name:'Development'},{id:'10.2',name:'Unit Test'},{id:'10.3',name:'Code Review'},{id:'10.4',name:'Test Support'}],
-      [{id:'B.NFR',name:'NFR Gathering'},{id:'B.PTS',name:'Performance Test Scripting'},{id:'B.PTX',name:'Performance Test Execution'}],
-      [{id:'B.PSD',name:'Penetration Test Scenario Development'},{id:'B.PTE',name:'Penetration Test Execution'},{id:'B.PTR',name:'Penetration Test Report'}],
-      [{id:'B.EP',name:'Environment Provisioning'},{id:'B.CD',name:'CI/CD Pipeline Development'}],
-      [{id:'B.DD',name:'Data Development'},{id:'B.DTS',name:'Data Test Support'}],
+    {label:'BUILD',color:'#0b7a68',bg:'#0b7a6815',stage:'Build',procs:[
+      {id:'6.1',name:'Ideation & Planning'},{id:'6.2',name:'Project Governance'},
+      {id:'7.1',name:'Detailed User Story Development'},{id:'7.2',name:'Development Support'},
+      {id:'7.3',name:'Test Support'},{id:'7.4',name:'Deployment Support'},
+      {id:'8.1',name:'User Interface Design (Hi-fi)'},{id:'8.2',name:'Copywriting'},
+      {id:'9.1',name:'Detailed Design'},
+      {id:'10.1',name:'Development'},{id:'10.2',name:'Unit Test'},
+      {id:'10.3',name:'Code Review'},{id:'10.4',name:'Test Support'},
+      {id:'NFR Gathering',name:'NFR Gathering'},{id:'Performance Test Scripting',name:'Performance Test Scripting'},
+      {id:'Penetration Test Scenario Development',name:'Penetration Test Scenario Development'},
+      {id:'Penetration Test Execution',name:'Penetration Test Execution'},
+      {id:'Environment Provisioning',name:'Environment Provisioning'},
+      {id:'CI/CD Pipeline Development',name:'CI/CD Pipeline Development'},
+      {id:'Data Development',name:'Data Development'},{id:'Data Test Support',name:'Data Test Support'},
     ]},
-    {label:'TEST',color:'#92400e',bg:'#92400e12',stage:'Test',cols:[
-      [{id:'11.1',name:'Test Approach'},{id:'11.2',name:'Test Case Development'},{id:'11.3',name:'Defect Management'}],
-      [{id:'12.1',name:'SIT Test Data Preparation'},{id:'12.2',name:'SIT Test Execution'}],
-      [{id:'13.1',name:'UAT Test Data Preparation'},{id:'13.2',name:'UAT Test Execution'}],
+    {label:'TEST',color:'#92400e',bg:'#92400e12',stage:'Test',procs:[
+      {id:'11.1',name:'Test Approach'},{id:'11.2',name:'Test Case Development'},
+      {id:'11.3',name:'Defect Management'},{id:'12.1',name:'SIT Test Data Preparation'},
+      {id:'12.2',name:'SIT Test Execution'},{id:'13.1',name:'UAT Test Data Preparation'},
+      {id:'13.2',name:'UAT Test Execution'},
     ]},
     {label:'DEPLOYMENT',color:'#991b1b',bg:'#991b1b12',stage:'Deployment',procs:[
       {id:'14.1',name:'Runbook Development'},{id:'14.2A',name:'IVT Test Case Development'},
@@ -1192,10 +1203,10 @@ const ADOPT_GROUPS=[
   ]},
   {label:'After Development',color:'#1a2e50',merged:true,sub:[
     {label:'POST DEVELOPMENT',color:'#9d174d',bg:'#9d174d12',stage:'Post Development',procs:[
-      {id:'PD.IM',name:'Incident Management'},{id:'PD.PM',name:'Problem Management'},
-      {id:'PD.FO',name:'FinOps'},{id:'PD.CM',name:'Capacity Monitoring'},
-      {id:'PD.SR',name:'Self Repairing'},{id:'PD.E2E',name:'E2E Monitoring'},
-      {id:'PD.CP',name:'Capacity Planning'},
+      {id:'Incident Management',name:'Incident Management'},{id:'Problem Management',name:'Problem Management'},
+      {id:'E2E Monitoring',name:'E2E Monitoring'},{id:'Capacity Planning',name:'Capacity Planning'},
+      {id:'FinOps',name:'FinOps'},{id:'Capacity Monitoring',name:'Capacity Monitoring'},
+      {id:'Self Repairing',name:'Self Repairing'},
     ]},
   ]},
 ];
@@ -1284,22 +1295,14 @@ function renderAdopt(){
   board.innerHTML=ADOPT_GROUPS.map(grp=>{
     const grpCols=grp.sub.length;
     const subcols=grp.sub.map(sub=>{
-      // sub.cols = multiple mini-columns sharing ONE header band (matches reference layout for DESIGN/BUILD/TEST)
-      // sub.procs = single flat column (used by INITIATION/DISCOVERY/DEPLOYMENT/POST DEVELOPMENT)
-      const miniCols=sub.cols||[sub.procs];
-      const renderedMiniCols=miniCols.map(colProcs=>{
-        const cards=colProcs.map(renderProcCard).join('');
-        if(vHasAgent&&!cards.trim()) return null; // whole mini-column empty after filter
-        return `<div class="adopt-minicol">${cards}</div>`;
-      }).filter(Boolean);
-      if(vHasAgent&&!renderedMiniCols.length) return '';
+      const cards=sub.procs.map(renderProcCard).join('');
+      if(vHasAgent&&!cards.trim()) return ''; // whole subcolumn empty after filter
       const subHdr = grp.merged
         ? `<div class="adopt-grp-hdr" style="min-height:70.5px;display:flex;align-items:center;justify-content:center;writing-mode:horizontal-tb">${sub.label}</div>`
         : `<div class="adopt-sub-hdr" style="background:${sub.bg};color:${sub.color};border-bottom:2px solid ${sub.color}40">${sub.label}</div>`;
-      const isMulti=!!sub.cols;
-      return `<div class="adopt-subcol" style="flex:${isMulti?miniCols.length:1};min-width:${isMulti?miniCols.length*120:120}px">
+      return `<div class="adopt-subcol" style="flex:1;min-width:120px">
         ${subHdr}
-        <div class="adopt-cards${isMulti?' adopt-cards-multi':''}">${renderedMiniCols.join('')}</div>
+        <div class="adopt-cards">${cards}</div>
       </div>`;
     }).join('');
     if(vHasAgent&&!subcols.trim()) return '';
