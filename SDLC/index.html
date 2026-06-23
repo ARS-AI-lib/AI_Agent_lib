@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gen AI SDLC Dashboard</title>
+<title>AI Agent Library Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -96,6 +96,7 @@ select.dd:focus{border-color:var(--ag)}
 .cid{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--mu2)}
 .cproc{font-size:9.5px;padding:1px 6px;border-radius:3px;font-weight:600;white-space:nowrap}
 .cname{font-size:12.5px;font-weight:700;color:var(--tx);margin-bottom:4px;line-height:1.35}
+.cpowner{font-size:9.5px;color:var(--mu);margin-bottom:4px;font-weight:600}
 .alist{display:flex;flex-direction:column;gap:4px}
 .arow{background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:6px 9px;display:flex;align-items:flex-start;gap:6px}
 .arow.ag{border-left:3px solid var(--ag)}.arow.sk{border-left:3px solid var(--sk)}
@@ -221,7 +222,7 @@ select.dd:focus{border-color:var(--ag)}
 
 <!-- ── NAV ── -->
 <nav>
-  <div class="nav-brand"><div><h1>Gen AI SDLC</h1><p>Dashboard</p></div></div>
+  <div class="nav-brand"><div><h1>AI Agent Library</h1><p>Dashboard</p></div></div>
   <button class="tab on" id="tab-lib" onclick="switchTab('lib')">Agent Library</button>
   <button class="tab"    id="tab-adopt" onclick="switchTab('adopt')">SDLC AI Adoption</button>
   <button class="tab"    id="tab-tl"  onclick="switchTab('tl')">SDLC Timeline</button>
@@ -241,7 +242,7 @@ select.dd:focus{border-color:var(--ag)}
       <div class="chip c-uc"><div class="n" id="s-uc">—</div><div class="l">Use cases</div></div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-      <button class="btnref" id="btnref" title="Refresh from Google Sheets" onclick="loadData()">
+      <button class="btnref" id="btnref" title="Refresh from Google Sheets" onclick="loadAll()">
         <svg id="ri" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
         </svg>
@@ -332,6 +333,108 @@ function parseUCSheet(rows){
   }
   return out.length?out:null;
 }
+// ── SDLC PROCESS OWNER (Sheet 'SDLC') ──
+// Extracts the leading numeric id from a process string, e.g. "1.1 Feasibility Study" -> "1.1".
+// Special non-numbered processes (e.g. "Incident Management") have no numeric prefix — the whole
+// trimmed string is the id, same convention used by agentProcessIds() below for AGENTS data.
+function extractProcessId(s){
+  if(!s) return '';
+  const t=s.trim();
+  const m=t.match(/^(\d+\.\d+[A-Za-z]?)\b/);
+  return m?m[1]:t;
+}
+// Sheet 'SDLC' columns (by header-name match, except Process Owner which is a fixed position per spec):
+//   Process  -> any header containing "process" but not "owner"
+//   Process Owner -> column F (index 5), explicit per spec
+function parseSDLCSheet(rows){
+  if(!rows||rows.length<2) return null;
+  const h=rows[0].map(c=>c.toLowerCase().replace(/[\s_.]/g,''));
+  const iP=h.findIndex(x=>x.includes('process')&&!x.includes('owner'));
+  const iO=5;
+  if(iP<0) return null;
+  const map={};
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    const procRaw=(r[iP]||'').trim();
+    const ownerRaw=(r[iO]||'').trim();
+    if(!procRaw||!ownerRaw) continue;
+    const id=extractProcessId(procRaw);
+    if(id&&!map[id]) map[id]=ownerRaw;
+  }
+  return Object.keys(map).length?map:null;
+}
+// Converts the gviz "table" JSON shape into the same [header,...,row,...] shape parseSDLCSheet expects.
+// headers=1 in the request URL forces Google to treat row 1 as the header (cols[].label), so no
+// header-guessing quirks — table.rows below only ever contains actual data rows.
+function gvizJsonToRows(json){
+  if(!json||!json.table) return null;
+  const cols=json.table.cols||[];
+  const header=cols.map(c=>(c.label||c.id||'').toString());
+  const rows=[header];
+  (json.table.rows||[]).forEach(r=>{
+    rows.push((r.c||[]).map(cell=>(cell&&cell.v!=null)?String(cell.v):''));
+  });
+  return rows;
+}
+// Loaded via a <script> tag (JSONP-style), same technique as the main Apps Script load — this avoids
+// the browser CORS block that a direct fetch() to docs.google.com/.../gviz/tq runs into (the gviz
+// endpoint doesn't send Access-Control-Allow-Origin, so fetch() fails with "Failed to fetch").
+function loadSDLCOwners(){
+  return new Promise((resolve)=>{
+    const old=document.getElementById('sdlcJsonp');
+    if(old) old.remove();
+    const cbName='sdlcCb_'+Date.now();
+    const timer=setTimeout(()=>{
+      delete window[cbName];
+      console.warn('[SDLC] Timeout loading process-owner data');
+      SDLC_OWNER_MAP={};
+      resolve();
+    },10000);
+    window[cbName]=function(json){
+      clearTimeout(timer);
+      delete window[cbName];
+      try{
+        const rows=gvizJsonToRows(json);
+        const map=rows?parseSDLCSheet(rows):null;
+        SDLC_OWNER_MAP=map||{};
+        console.log('[SDLC] Loaded process-owner map for', Object.keys(SDLC_OWNER_MAP).length, 'processes');
+      }catch(e){
+        console.warn('[SDLC] Could not parse process-owner data:', e.message);
+        SDLC_OWNER_MAP={};
+      }
+      resolve();
+    };
+    const script=document.createElement('script');
+    script.id='sdlcJsonp';
+    script.src=`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?gid=${SDLC_GID}&headers=1&tqx=responseHandler:${cbName}`;
+    script.onerror=()=>{
+      clearTimeout(timer);
+      delete window[cbName];
+      console.warn('[SDLC] Could not load process-owner data — script failed to load (check sheet sharing: "Anyone with the link – Viewer")');
+      SDLC_OWNER_MAP={};
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
+}
+// Process Owner for a given process string (e.g. uc.process "1.1 Feasibility Study" or a bare proc.id "1.1")
+function getProcessOwner(procStr){
+  return SDLC_OWNER_MAP[extractProcessId(procStr)]||'';
+}
+// Unique individual owner names across all processes, splitting comma-separated co-owners
+function procOwnerOptions(){
+  const all=Object.values(SDLC_OWNER_MAP).flatMap(v=>v.split(',').map(s=>s.trim()).filter(Boolean));
+  return uniq(all).sort();
+}
+// Does this process's owner match the current Process Owner filter? (no filter selected = always true)
+function procOwnerOk(procStr){
+  if(vProcOwner.size===0) return true;
+  const owner=getProcessOwner(procStr);
+  if(!owner) return false;
+  const names=owner.split(',').map(s=>s.trim());
+  return names.some(n=>vProcOwner.has(n));
+}
+
 function parseAgentSheet(rows){
   if(!rows||rows.length<2) return null;
   const h=rows[0].map(c=>c.toLowerCase().replace(/[\s_.]/g,''));
@@ -366,7 +469,7 @@ let UCS=[],AGENTS=[];
 // Agent Library: vView in {by-team, by-role, by-ability}; vType filter; multi-select ability/team/role
 // AI Adoption: vSDLC toggle (process vs usecase view), vAdoptView in {by-stage, by-process}, vStage, vHasAgent
 let vSDLC=false,vHasAgent=false,vView='by-team',vAdoptView='by-stage',vStage='all',vType='all',vSearch='';
-let vAbility=new Set(),vTeam=new Set(),vRole=new Set();
+let vAbility=new Set(),vTeam=new Set(),vRole=new Set(),vProcOwner=new Set();
 
 // Agents filtered by current search + Team/Role/Ability (shared across Agent Library + AI Adoption)
 const visAgents=()=>AGENTS.filter(a=>{
@@ -385,6 +488,9 @@ const sc=s=>SC[s]||'#7a85a3';
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwhj6QKTkjcFzKU71xoalyloSyWufbkQllluvT25QHbQ5xCe1oYXlKBS9vIrmRqoEc/exec';
 const SID='16UUi0oLkJr8YXu7J33-FvJxiEMUcE8cqyNHE4aYpfDc';
 const csvUrl=g=>`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&gid=${g}`;
+// Confirmed gid for the 'SDLC' tab.
+const SDLC_GID='1166115430';
+let SDLC_OWNER_MAP={}; // processId (e.g. "1.1") -> owner name(s), built from Sheet 'SDLC'
 
 // Convert [{ColName: val, ...}, ...] → [[header,...],[val,...],...]
 function objectArrayToRows(arr){
@@ -437,7 +543,7 @@ async function loadData(){
       const now=new Date().toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});
       document.getElementById('rts').textContent=now;
       console.log('[SUCCESS] Loaded', AGENTS.length, 'agents');
-      showToast(`✓ Loaded ${AGENTS.length} agents from Google Sheets`,'s');
+      showToast('✓ Loaded from Google Sheets','s');
     }catch(e){
       console.error('[CALLBACK ERROR]', e);
       loadFallback();
@@ -625,13 +731,13 @@ function msToggle(id){
   document.getElementById('ms-list-'+id).classList.toggle('open');
 }
 function msChange(id,val,checked){
-  const map={ability:vAbility,team:vTeam,role:vRole,teamA:vTeam,roleA:vRole};
+  const map={ability:vAbility,team:vTeam,role:vRole,teamA:vTeam,roleA:vRole,procOwner:vProcOwner};
   const set=map[id];
   if(checked) set.add(val); else set.delete(val);
   // Update button label + styling without full rebuild
   const btn=document.getElementById('ms-btn-'+id);
   if(btn){
-    const labels={ability:'Ability',team:'Team',role:'Role',teamA:'Team',roleA:'Role'};
+    const labels={ability:'Ability',team:'Owner',role:'Role',teamA:'Owner',roleA:'Role',procOwner:'Process Owner'};
     btn.textContent=msLabel(set,labels[id]);
     btn.className='ms-btn'+(set.size>0?' has-sel':'');
   }
@@ -669,7 +775,7 @@ function renderStatusLegend(elId,pool){
 
 // ── LIBRARY CONTROLS (no SDLC; By Team/Role/Ability + filters) ──
 function buildCtrl(){
-  const agViews=[['by-team','By Team'],['by-role','By Role'],['by-ability','By Ability']];
+  const agViews=[['by-team','By Owner'],['by-role','By Role'],['by-ability','By Ability']];
   if(!agViews.find(v=>v[0]===vView)) vView='by-team';
   const dd=(id,opts,val,onch,lbl)=>`<div class="cg"><span class="cl">${lbl}</span><select class="dd" id="${id}" onchange="${onch}">${opts.map(o=>`<option value="${esc(Array.isArray(o)?o[0]:o)}" ${val===(Array.isArray(o)?o[0]:o)?'selected':''}>${Array.isArray(o)?o[1]:(o==='all'?'All':o)}</option>`).join('')}</select></div>`;
   const abilityOpts=uniq(AGENTS.map(a=>a.ability).filter(Boolean)).sort();
@@ -678,7 +784,7 @@ function buildCtrl(){
 
   // Order: View, Team, Role, Ability, Type
   let h=dd('ddv',agViews,vView,"setView(this.value)",'VIEW');
-  h+='<div class="csep"></div><div class="cg"><span class="cl">TEAM</span>'+msHtml('team',teamOpts,vTeam,'Team')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">OWNER</span>'+msHtml('team',teamOpts,vTeam,'Owner')+'</div>';
   h+='<div class="csep"></div><div class="cg"><span class="cl">ROLE</span>'+msHtml('role',roleOpts,vRole,'Role')+'</div>';
   h+='<div class="csep"></div><div class="cg"><span class="cl">ABILITY</span>'+msHtml('ability',abilityOpts,vAbility,'Ability')+'</div>';
   h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderAll()",'TYPE');
@@ -702,8 +808,14 @@ function buildCtrlAdopt(){
       h+='<div class="csep"></div>'+dd('dds',stages,vStage,"vStage=this.value;renderAdopt()",'STAGE');
     }
   }
-  h+='<div class="csep"></div><div class="cg"><span class="cl">TEAM</span>'+msHtml('teamA',teamOpts,vTeam,'Team')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">OWNER</span>'+msHtml('teamA',teamOpts,vTeam,'Owner')+'</div>';
   h+='<div class="csep"></div><div class="cg"><span class="cl">ROLE</span>'+msHtml('roleA',roleOpts,vRole,'Role')+'</div>';
+  // Process Owner filter — options come from Sheet 'SDLC' col F (comma-split, unique). Hidden entirely
+  // if that data hasn't loaded / has no owners yet, rather than showing an empty, useless dropdown.
+  const procOwnerOpts=procOwnerOptions();
+  if(procOwnerOpts.length){
+    h+='<div class="csep"></div><div class="cg"><span class="cl">PROCESS OWNER</span>'+msHtml('procOwner',procOwnerOpts,vProcOwner,'Process Owner')+'</div>';
+  }
   // Has agent button (always available on adopt page)
   h+='<div class="csep"></div>'+`<button class="pill ${vHasAgent?'on':''}" onclick="vHasAgent=!vHasAgent;renderAdopt()">Has agent</button>`;
   h+='<button class="btnclr" title="Clear filters" onclick="clearF()">✕</button>';
@@ -721,7 +833,7 @@ function setAdoptView(v){
   if(v!=='by-stage') vStage='all';
   renderAdopt();
 }
-function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vAdoptView='by-stage';vStage='all';vType='all';vAbility=new Set();vTeam=new Set();vRole=new Set();vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
+function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vAdoptView='by-stage';vStage='all';vType='all';vAbility=new Set();vTeam=new Set();vRole=new Set();vProcOwner=new Set();vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
 function renderAll(){
   buildCtrl();updateStats();renderLib();renderStatusLegend('lib-legend',AGENTS.filter(a=>tOk(a)));
   if(curPage==='adopt') renderAdopt();
@@ -761,7 +873,7 @@ function renderByDim(dim){
   if(dim==='stage') groups=SO.filter(s=>(vStage==='all'||s===vStage)&&UCS.some(u=>u.stage===s)).map(s=>({key:s,label:s,color:sc(s)}));
   else groups=uniq(UCS.filter(u=>sOk(u)).map(u=>u.process)).map(p=>({key:p,label:p,color:sc(UCS.find(u=>u.process===p)?.stage||'')}));
   return groups.map(g=>{
-    let ucs=UCS.filter(u=>(dim==='stage'?u.stage===g.key:u.process===g.key)&&sOk(u));
+    let ucs=UCS.filter(u=>(dim==='stage'?u.stage===g.key:u.process===g.key)&&sOk(u)&&procOwnerOk(u.process));
     const all=ucs.length,cov=ucs.filter(u=>getAgs(u).length>0).length;
     if(vHasAgent) ucs=ucs.filter(u=>getAgs(u).length>0); // only filter when Has agent ON
     const cards=ucs.map(u=>renderCard(u)).join('');
@@ -782,8 +894,10 @@ function renderCard(uc){
   if(vType==='skill') ags=ags.filter(a=>a.type==='skill');
   const cov=getAgs(uc).length>0;
   const ps=`background:${sc(uc.stage)}15;color:${sc(uc.stage)};border:1px solid ${sc(uc.stage)}30`;
+  const procOwner=getProcessOwner(uc.process);
   return `<div class="card ${cov?'cov':'emp'}" onclick="openM('${esc(uc.name)}','${esc(uc.process)}')">
     <div class="cmeta"><span class="cid">${uc.process.split(' ')[0]}</span><span class="cproc" style="${ps}">${uc.process.replace(/^\S+\s/,'')}</span></div>
+    ${procOwner?`<div class="cpowner">Process Owner: ${esc(procOwner)}</div>`:''}
     <div class="cname">${uc.name}</div>
     <div class="alist">${ags.length>0?ags.map(a=>renderARow(a)).join(''):'<span class="ecap"><span class="edot"></span>No agent / skill yet</span>'}</div>
   </div>`;
@@ -828,8 +942,8 @@ function renderAC(a,orp=false){
   return `<div class="ac ${a.type==='agent'?'isag':'issk'} ${orp?'orp':''}" onclick="openAgentDetail('${esc(a.name)}')" style="cursor:pointer"><div class="achdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span><span class="acname">${a.name}</span></div>
     <div class="acrows">
       ${a.ucName?`<div class="acrow"><span class="ack">Usecase</span><span style="color:var(--tx2);font-size:11px">${a.ucName}</span></div>`:''}
-      ${a.team?`<div class="acrow"><span class="ack">Team</span><span class="ttag">${a.team}</span></div>`:''}
-      ${a.owner?`<div class="acrow"><span class="ack">Owner</span><span>${a.owner}</span></div>`:''}
+      ${a.team?`<div class="acrow"><span class="ack">Owner</span><span class="ttag">${a.team}</span></div>`:''}
+      ${a.owner?`<div class="acrow"><span class="ack">Creator</span><span>${a.owner}</span></div>`:''}
       ${a.ability?`<div class="acrow"><span class="ack">Ability</span><span>${a.ability}</span></div>`:''}
       ${relHtml}
       ${a.role?`<div class="acrow"><span class="ack">Role</span><span>${a.role}</span></div>`:''}
@@ -846,18 +960,20 @@ function openM(ucName,ucProcess){
   const agh=ags.length>0?ags.map(a=>{
     const ph=phc(a.phase);
     return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
-      <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
-      <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
+      <div class="mrow"><span class="mk">Owner</span><span>${a.team||'—'}</span></div>
+      <div class="mrow"><span class="mk">Creator</span><span>${a.owner||'—'}</span></div>
       <div class="mrow"><span class="mk">Phase</span><span class="ph ${ph}">${a.phase||'—'}</span></div>
       <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
       <div class="mrow"><span class="mk">Launch</span><span style="font-family:'IBM Plex Mono',monospace">${fmtD(a.launch)||'—'}</span></div>
       ${a.phase?`<div class="mpbw"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu)"><span>Progress</span><strong style="font-family:'IBM Plex Mono',monospace">${a.progress}%</strong></div><div class="mpb"><div class="mpf ${pc(a.progress)}" style="width:${a.progress}%"></div></div></div>`:''}</div>`;
   }).join(''):`<span class="ecap"><span class="edot"></span>No agent or skill for this usecase</span>`;
+  const procOwner=getProcessOwner(uc.process||ucProcess);
   document.getElementById('mbody').innerHTML=`
     <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
       <span style="font-size:10.5px;color:var(--mu)">${uc.process||ucProcess}</span>
       ${uc.stage?`<span style="font-size:10.5px;padding:2px 9px;border-radius:3px;background:${col}15;color:${col};border:1px solid ${col}30;font-weight:600">${uc.stage}</span>`:''}
     </div>
+    ${procOwner?`<div style="font-size:10.5px;color:var(--mu);margin-bottom:6px">Process Owner: <strong style="color:var(--tx2)">${esc(procOwner)}</strong></div>`:''}
     <div class="mtitle">${ucName}</div>
     <div class="msec">Agents &amp; Skills (${ags.length})</div>${agh}`;
   document.getElementById('modal').classList.add('open');
@@ -961,7 +1077,7 @@ function drawTL(){
   const MONTHS=[{l:'MAY',s:new Date('2026-05-01'),e:new Date('2026-05-31')},{l:'JUN',s:new Date('2026-06-01'),e:new Date('2026-06-30')},{l:'JUL',s:new Date('2026-07-01'),e:new Date('2026-07-31')},{l:'AUG',s:new Date('2026-08-01'),e:new Date('2026-08-31')},{l:'SEP',s:new Date('2026-09-01'),e:new Date('2026-09-30')}];
   ctx.fillStyle='#f8f9fc';ctx.fillRect(0,0,W,TL_HH);
   ctx.fillStyle='#eef0f6';ctx.fillRect(0,0,TL_LW,TL_HH);
-  ctx.fillStyle='#7a85a3';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Team',14,TL_HH/2);
+  ctx.fillStyle='#7a85a3';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Owner',14,TL_HH/2);
   MONTHS.forEach(m=>{
     const x1=Math.max(dx(m.s),TL_LW),x2=Math.min(dx(new Date(m.e.getTime()+864e5)),TL_LW+tw);
     if(x2<=x1) return;
@@ -1068,8 +1184,8 @@ function openAgentsModal(ags,launch,title,showUC=true){
     return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
       ${descRow}
       ${ucRow}
-      <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
-      <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
+      <div class="mrow"><span class="mk">Owner</span><span>${a.team||'—'}</span></div>
+      <div class="mrow"><span class="mk">Creator</span><span>${a.owner||'—'}</span></div>
       <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
       ${relRow}
       <div class="mrow"><span class="mk">Role</span><span>${a.role||'—'}</span></div>
@@ -1270,6 +1386,7 @@ function renderAdopt(){
   function renderProcCard(proc){
     const ags=visAgents().filter(a=>hasProcessId(a,proc.id));
     if(vHasAgent&&!ags.length) return '';
+    if(!procOwnerOk(proc.id)) return '';
     const statuses=getAgentStatuses(proc.id);
 
     const statusArray=[
@@ -1337,7 +1454,13 @@ function openAgentDetail(name,showUC=true){
   openAgentsModal([a],a.launch,a.name,showUC);
 }
 
-loadData();
+// Loads both the main agent/skill data (Apps Script JSONP) and the SDLC process-owner
+// lookup (direct CSV by gid) in parallel; the latter degrades gracefully on failure.
+function loadAll(){
+  loadData();
+  loadSDLCOwners().then(()=>{ buildCtrlAdopt(); renderAll(); });
+}
+loadAll();
 </script>
 </body>
 </html>
