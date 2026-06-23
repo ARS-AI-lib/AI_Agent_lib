@@ -159,7 +159,7 @@ select.dd:focus{border-color:var(--ag)}
 .spin{width:30px;height:30px;border:3px solid var(--bd);border-top-color:var(--ag);border-radius:50%;animation:spin .8s linear infinite}
 
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
-@media(max-width:700px){nav,.cbar,.legend,.main,.tl-wrap{padding-left:14px;padding-right:14px}.grid,.agrid{grid-template-columns:1fr}}
+@media(max-width:700px){nav,.cbar,.legend,.main{padding-left:14px;padding-right:14px}.grid,.agrid{grid-template-columns:1fr}}
 /* ── AI ADOPTION PAGE ── */
 .adopt-wrap{display:flex;flex-direction:column;height:100%;overflow:hidden}
 .adopt-topbar{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 24px 10px;flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd);gap:12px;flex-wrap:wrap}
@@ -224,7 +224,6 @@ select.dd:focus{border-color:var(--ag)}
   <div class="nav-brand"><div><h1>Gen AI SDLC</h1><p>Dashboard</p></div></div>
   <button class="tab on" id="tab-lib" onclick="switchTab('lib')">Agent Library</button>
   <button class="tab"    id="tab-adopt" onclick="switchTab('adopt')">SDLC AI Adoption</button>
-  <button class="tab"    id="tab-tl"  onclick="switchTab('tl')">SDLC Timeline</button>
   <div class="nav-search">
     <div class="nav-search-wrap">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -273,27 +272,6 @@ select.dd:focus{border-color:var(--ag)}
       <div class="adopt-board" id="adopt-board"></div>
     </div>
     <div class="main" id="main-adopt-uc" style="display:none"></div>
-  </div>
-</div>
-
-<!-- ── PAGE: TIMELINE ── -->
-<div class="page" id="page-tl">
-  <div style="padding:20px 28px 52px">
-    <div id="tl-main">
-      <div id="tl-legend" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:9px 14px;background:var(--sf);border:1.5px solid var(--bd);border-radius:8px;box-shadow:var(--sh)"></div>
-      <div style="background:var(--sf);border:1.5px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:14px;box-shadow:var(--sh)">
-        <div style="background:#1e2d4a;color:#fff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-size:13.5px;font-weight:700">Generative AI for SDLC — Launch Timeline</div>
-            <div style="font-size:10.5px;color:#8fa6c8;margin-top:2px">Click icon → agent details · Click milestone card → filter</div>
-          </div>
-          <div style="font-size:11px;color:#8fa6c8">May – Sep 2026</div>
-        </div>
-        <div style="overflow-x:auto"><canvas id="tl-canvas" style="display:block;cursor:default"></canvas></div>
-      </div>
-      <div id="tl-ms-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px"></div>
-      <div id="tl-out-card"></div>
-    </div>
   </div>
 </div>
 
@@ -413,7 +391,7 @@ async function loadData(){
     loadFallback();
     document.getElementById('rts').textContent='timeout / fallback';
     showToast('Apps Script timeout — showing fallback data','e');
-    renderAll();if(curPage==='tl') renderTL();if(curPage==='adopt') renderAdopt();
+    renderAll();if(curPage==='adopt') renderAdopt();
   },12000);
 
   window[cbName]=function(json){
@@ -445,7 +423,7 @@ async function loadData(){
       showToast(`⚠ ${e.message}`,'e');
       console.error('[loadData callback]',e.message);
     }
-    renderAll();if(curPage==='tl') renderTL();if(curPage==='adopt') renderAdopt();
+    renderAll();if(curPage==='adopt') renderAdopt();
   };
 
   const script=document.createElement('script');
@@ -459,7 +437,7 @@ async function loadData(){
     loadFallback();
     document.getElementById('rts').textContent='error / fallback';
     showToast('โหลด Script ไม่สำเร็จ — ตรวจสอบ Deployment ID และสิทธิ์ "Anyone"','e');
-    renderAll();if(curPage==='tl') renderTL();if(curPage==='adopt') renderAdopt();
+    renderAll();if(curPage==='adopt') renderAdopt();
   };
   document.head.appendChild(script);
 }
@@ -595,13 +573,12 @@ function updateStats(){
 // ── TAB ──
 function switchTab(t){
   curPage=t;
-  ['lib','adopt','tl'].forEach(id=>{
+  ['lib','adopt'].forEach(id=>{
     const p=document.getElementById('page-'+id);
     const b=document.getElementById('tab-'+id);
     if(p) p.classList.toggle('on',id===t);
     if(b) b.classList.toggle('on',id===t);
   });
-  if(t==='tl') renderTL();
   if(t==='adopt') renderAdopt();
 }
 
@@ -725,7 +702,6 @@ function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vAdoptView='by-sta
 function renderAll(){
   buildCtrl();updateStats();renderLib();renderStatusLegend('lib-legend',AGENTS.filter(a=>tOk(a)));
   if(curPage==='adopt') renderAdopt();
-  if(curPage==='tl'){drawTL();drawMsCards();drawOutCard();}
   const clrBtn=document.getElementById('navSearchClear');
   if(clrBtn) clrBtn.style.display=vSearch?'block':'none';
 }
@@ -863,299 +839,6 @@ function openM(ucName,ucProcess){
   document.getElementById('modal').classList.add('open');
 }
 function closeMBg(e){if(e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
-
-// ── TIMELINE ──
-const TL_MS=[
-  {id:'M1',color:'#0b7a68',start:new Date('2026-05-18'),end:new Date('2026-06-12')},
-  {id:'M2',color:'#1558b0',start:new Date('2026-06-01'),end:new Date('2026-06-26')},
-  {id:'M3',color:'#6d28d9',start:new Date('2026-06-15'),end:new Date('2026-07-10')},
-  {id:'M4',color:'#c2590a',start:new Date('2026-06-29'),end:new Date('2026-07-24')},
-];
-const TL_S=new Date('2026-05-01'),TL_E=new Date('2026-09-30'),TL_D=(TL_E-TL_S)/864e5;
-const TODAY=new Date(); TODAY.setHours(0,0,0,0);
-const TL_LW=200,TL_RH=76,TL_HH=36,TL_AH=52,TL_IR=12,TL_PAD=16;
-let tlFilter=null,tlClicks=[],tlMsClicks=[];
-
-const TL_ST={
-  done:   {bg:'#dcfce7',bd:'#16a34a',tx:'#14532d',ic:'✓',lb:'Done (Production)'},
-  pilot:  {bg:'#f4f6e5',bd:'#8ea82a',tx:'#5a6b1c',ic:'◆',lb:'Pilot'},
-  ontime: {bg:'#dbeafe',bd:'#2563eb',tx:'#1e3a8a',ic:'●',lb:'On track'},
-  risk:   {bg:'#fef3c7',bd:'#d97706',tx:'#78350f',ic:'⚠',lb:'At risk'},
-  delay:  {bg:'#fee2e2',bd:'#dc2626',tx:'#7f1d1d',ic:'✕',lb:'Delayed'},
-  notstart:{bg:'#f3f4f6',bd:'#9ca3af',tx:'#4b5563',ic:'○',lb:'Not started'},
-};
-
-function tlStatus(a){
-  const d=parseDate(a.launch);
-  const p=typeof a.progress==='number'?a.progress:(parseInt((a.progress||'0').toString().replace('%',''))||0);
-  const ph=(a.phase||'').toLowerCase();
-  
-  // Done: Production phase AND 100% progress
-  if(ph==='production'&&p>=100) return 'done';
-  
-  // Pilot: Pilot phase (even if not 100%)
-  if(ph==='pilot') return 'pilot';
-  
-  // If no launch date, only mark as not started if progress is 0
-  if(!d) return p>0?'ontime':'notstart';
-  
-  // Launch date is in the FUTURE → forecast, but never show Delayed
-  if(d>TODAY){
-    if(p===0) return 'notstart';
-    
-    // Forecast: are we on track to finish by launch?
-    const tot=(d-TL_S)/864e5;                              // total days: start → launch
-    const el=(TODAY-TL_S)/864e5;                           // elapsed days: start → today
-    const exp=tot>0?Math.min(100,el/tot*100):100;          // expected % done by now
-    const gap=exp-p;  // positive = behind schedule
-    
-    if(gap<=20)  return 'ontime';   // on track
-    return       'risk';            // behind schedule, but time to catch up (yellow, not red)
-  }
-  
-  // Launch date has PASSED → now evaluate actual performance
-  if(p>=100) return 'done';  // finished (on time or eventually)
-  if(p===0) return 'notstart';  // nothing started even after deadline
-  return 'delay';  // ONLY HERE: started but didn't finish by deadline (RED)
-}
-
-function tlX(d,tw){return TL_LW+Math.max(0,Math.min(1,(d-TL_S)/864e5/TL_D))*tw;}
-
-function rrect(ctx,x,y,w,h,r){
-  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
-}
-
-function renderTL(){
-  // legend
-  document.getElementById('tl-legend').innerHTML=
-    `<span style="font-size:10px;font-weight:700;color:var(--mu);letter-spacing:.05em">STATUS:</span>`+
-    Object.entries(TL_ST).map(([k,v])=>`<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--tx2)"><div style="width:16px;height:16px;border-radius:50%;background:${v.bg};border:2px solid ${v.bd};display:flex;align-items:center;justify-content:center;font-size:9px;color:${v.tx};font-weight:700">${v.ic}</div>${v.lb}</div>`).join('')+
-    `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ef4444"><div style="width:2px;height:16px;background:#ef4444;border-radius:1px"></div>Today</div>`;
-  drawTL();
-  drawMsCards();
-  drawOutCard();
-}
-
-function drawTL(){
-  const cv=document.getElementById('tl-canvas');if(!cv) return;
-  const teams=uniq(visAgents().map(a=>a.team).filter(Boolean));
-  const actMs=tlFilter&&tlFilter!=='out'?TL_MS.find(m=>m.id===tlFilter):null;
-  const vis=(tlFilter==='out')
-    ? teams.filter(t=>visAgents().some(a=>{if(a.team!==t) return false;const d=parseDate(a.launch);return !d||!TL_MS.some(m=>d>=m.start&&d<=m.end);}))
-    : actMs?teams.filter(t=>visAgents().some(a=>a.team===t&&(()=>{const d=parseDate(a.launch);return d&&d>=actMs.start&&d<=actMs.end;})())):teams;
-  const wrap=cv.parentElement;
-  const W=Math.max(wrap.clientWidth||860,700),tw=W-TL_LW-TL_PAD;
-  const H=TL_HH+TL_AH+vis.length*TL_RH;
-  const DPR=window.devicePixelRatio||1;
-  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
-  cv.style.width=W+'px';cv.style.height=H+'px';
-  const ctx=cv.getContext('2d');
-  ctx.setTransform(DPR,0,0,DPR,0,0); // scale drawing ops to match backing-store resolution
-  ctx.clearRect(0,0,W,H);
-  const dx=d=>tlX(d,tw),tx=dx(TODAY);
-
-  // month header
-  const MONTHS=[{l:'MAY',s:new Date('2026-05-01'),e:new Date('2026-05-31')},{l:'JUN',s:new Date('2026-06-01'),e:new Date('2026-06-30')},{l:'JUL',s:new Date('2026-07-01'),e:new Date('2026-07-31')},{l:'AUG',s:new Date('2026-08-01'),e:new Date('2026-08-31')},{l:'SEP',s:new Date('2026-09-01'),e:new Date('2026-09-30')}];
-  ctx.fillStyle='#f8f9fc';ctx.fillRect(0,0,W,TL_HH);
-  ctx.fillStyle='#eef0f6';ctx.fillRect(0,0,TL_LW,TL_HH);
-  ctx.fillStyle='#7a85a3';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Team',14,TL_HH/2);
-  MONTHS.forEach(m=>{
-    const x1=Math.max(dx(m.s),TL_LW),x2=Math.min(dx(new Date(m.e.getTime()+864e5)),TL_LW+tw);
-    if(x2<=x1) return;
-    ctx.strokeStyle='#dde1ec';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x1,0);ctx.lineTo(x1,TL_HH);ctx.stroke();
-    ctx.fillStyle='#3d4a6b';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(m.l,(x1+x2)/2,TL_HH/2);
-  });
-  ctx.strokeStyle='#c8cde0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,TL_HH);ctx.lineTo(W,TL_HH);ctx.stroke();
-
-  // milestone axis
-  const ay=TL_HH;
-  ctx.fillStyle='#f2f4f8';ctx.fillRect(0,ay,W,TL_AH);
-  ctx.fillStyle='#eef0f6';ctx.fillRect(0,ay,TL_LW,TL_AH);
-  ctx.fillStyle='#7a85a3';ctx.font='10px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Milestones',14,ay+TL_AH/2);
-  tlMsClicks=[];
-  TL_MS.forEach(m=>{
-    const x1=dx(m.start),x2=dx(m.end),w=x2-x1,sel=tlFilter===m.id;
-    ctx.fillStyle=sel?m.color+'55':m.color+'30';rrect(ctx,x1,ay+7,w,TL_AH-14,5);ctx.fill();
-    ctx.strokeStyle=sel?m.color:m.color+'90';ctx.lineWidth=sel?2.5:1.5;rrect(ctx,x1,ay+7,w,TL_AH-14,5);ctx.stroke();
-    ctx.fillStyle=m.color;ctx.font=`bold ${sel?13:11.5}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(m.id,x1+w/2,ay+TL_AH/2-7);
-    const sL=m.start.toLocaleDateString('en-GB',{day:'numeric',month:'short'}),eL=m.end.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    ctx.font='8.5px sans-serif';ctx.fillStyle=m.color+'cc';ctx.fillText(`${sL}–${eL}`,x1+w/2,ay+TL_AH/2+8);
-    ctx.strokeStyle=m.color+'70';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x1,ay);ctx.lineTo(x1,ay+TL_AH);ctx.stroke();
-    tlMsClicks.push({x1,y1:ay,x2,y2:ay+TL_AH,id:m.id});
-  });
-  // today label on axis
-  ctx.fillStyle='#ef4444';rrect(ctx,tx+2,ay+2,36,16,3);ctx.fill();
-  ctx.fillStyle='#fff';ctx.font='bold 8px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Today',tx+5,ay+10);
-  ctx.strokeStyle='#dde1ec';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,ay+TL_AH);ctx.lineTo(W,ay+TL_AH);ctx.stroke();
-
-  // team rows
-  tlClicks=[];
-  vis.forEach((team,ti)=>{
-    const tAgs=visAgents().filter(a=>a.team===team);
-    const ry=TL_HH+TL_AH+ti*TL_RH,my=ry+TL_RH/2-8;
-    ctx.fillStyle=ti%2===0?'#fff':'#fafbfd';ctx.fillRect(0,ry,W,TL_RH);
-    ctx.fillStyle='#f4f6f8';ctx.fillRect(0,ry,TL_LW,TL_RH);
-    ctx.strokeStyle='#dde1ec';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(0,ry+TL_RH);ctx.lineTo(W,ry+TL_RH);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(TL_LW,ry);ctx.lineTo(TL_LW,ry+TL_RH);ctx.stroke();
-    ctx.fillStyle='#1a2236';ctx.font='bold 12.5px sans-serif';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(team,14,ry+10);
-    const rN=tAgs.filter(a=>{const p=parseInt((a.progress||'0').toString().replace('%',''))||0;return p>=70;}).length;
-    ctx.fillStyle='#7a85a3';ctx.font='10px sans-serif';ctx.fillText(`${tAgs.length} items · ${rN} ≥70%`,14,ry+27);
-    const outN=tAgs.filter(a=>{const d=parseDate(a.launch);return d&&!TL_MS.some(m=>d>=m.start&&d<=m.end);}).length;
-    if(outN){ctx.fillStyle='#c2590a';ctx.font='9.5px sans-serif';ctx.fillText(`⚠ ${outN} out of milestones`,14,ry+43);}
-    TL_MS.forEach(m=>{const isO=tlFilter&&tlFilter!==m.id;ctx.fillStyle=isO?m.color+'08':m.color+'12';ctx.fillRect(dx(m.start),ry,dx(m.end)-dx(m.start),TL_RH);});
-    ctx.save();ctx.strokeStyle='#ef444430';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(tx,ry);ctx.lineTo(tx,ry+TL_RH);ctx.stroke();ctx.setLineDash([]);ctx.restore();
-    const byDate={};
-    tAgs.forEach(a=>{const k=a.launch||'_';(byDate[k]=byDate[k]||[]).push(a);});
-    Object.entries(byDate).forEach(([ds,ags])=>{
-      const d=parseDate(ds);if(!d) return;
-      const inMs=TL_MS.find(m=>d>=m.start&&d<=m.end)||null;
-      const dim=(tlFilter==='out')?(!!inMs):(tlFilter&&(!inMs||inMs.id!==tlFilter));
-      const cx=dx(d);
-      if(dim){ctx.globalAlpha=0.15;ctx.beginPath();ctx.arc(cx,my,TL_IR,0,Math.PI*2);ctx.fillStyle='#9ca3af';ctx.fill();ctx.globalAlpha=1;return;}
-      const pr=['delay','risk','ontime','pilot','done','notstart'].find(s=>ags.map(a=>tlStatus(a)).includes(s))||'notstart';
-      const st=TL_ST[pr];const n=ags.length;
-      ctx.shadowColor='rgba(0,0,0,0.12)';ctx.shadowBlur=4;
-      ctx.beginPath();ctx.arc(cx,my,TL_IR,0,Math.PI*2);ctx.fillStyle=st.bg;ctx.fill();
-      ctx.shadowBlur=0;ctx.strokeStyle=st.bd;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,my,TL_IR,0,Math.PI*2);ctx.stroke();
-      ctx.fillStyle=st.tx;ctx.font=`bold ${n>1?11:10}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n>1?n:st.ic,cx,my);
-      const lb=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-      ctx.font='600 8.5px sans-serif';ctx.textBaseline='top';ctx.fillText(lb,cx,my+TL_IR+3);
-      tlClicks.push({x1:cx-TL_IR-2,y1:ry,x2:cx+TL_IR+2,y2:ry+TL_RH,agents:ags,launch:ds,team});
-    });
-  });
-
-
-  // today full dashed line
-  ctx.save();ctx.strokeStyle='#ef4444aa';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
-  ctx.beginPath();ctx.moveTo(tx,TL_HH);ctx.lineTo(tx,H);ctx.stroke();ctx.setLineDash([]);ctx.restore();
-  ctx.strokeStyle='#c8cde0';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(TL_LW,TL_HH);ctx.lineTo(TL_LW,H);ctx.stroke();
-
-  cv.onclick=e=>{
-    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-    const mh=tlMsClicks.find(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2);
-    if(mh){tlFilter=tlFilter===mh.id?null:mh.id;drawTL();drawMsCards();drawOutCard();return;}
-    const ah=tlClicks.find(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2);
-    if(ah) openAgentsModal(ah.agents,ah.launch);
-  };
-  cv.onmousemove=e=>{
-    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-    cv.style.cursor=(tlMsClicks.some(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2)||tlClicks.some(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2))?'pointer':'default';
-  };
-}
-
-// ── AGENT/SKILL DETAIL MODAL (shared by Agent Library + AI Adoption + Timeline) ──
-function openAgentsModal(ags,launch,title,showUC=true){
-  const d=launch?parseDate(launch):null;
-  const lbl=d?d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):(launch||null);
-  const inMs=d?TL_MS.find(m=>d>=m.start&&d<=m.end):null;
-  const dateBadge=lbl?(inMs
-    ?`<span style="font-size:10.5px;padding:2px 9px;border-radius:3px;background:${inMs.color}15;color:${inMs.color};border:1px solid ${inMs.color}30;font-weight:600">${inMs.id}</span>`
-    :`<span style="font-size:10.5px;padding:2px 9px;border-radius:3px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:600">⚠ Out of milestone</span>`)
-    :'';
-  const agh=ags.map(a=>{
-    const st=agentStatus(a);const sd=ST_DEF[st];
-    let relRow='';
-    if(a.type==='skill'){const parts=agentsOfSkill(a);if(parts.length) relRow=`<div class="mrow"><span class="mk">Agent</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;}
-    else{const sks=skillsOfAgent(a);if(sks.length) relRow=`<div class="mrow"><span class="mk">Skill</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;}
-    const descRow=a.desc&&a.desc!=='TBC'?`<div class="mrow" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="mk">Description</span><span style="color:var(--tx2);font-size:11px;line-height:1.45">${a.desc.replace(/<br\s*\/?>/gi,' ')}</span></div>`:'';
-    const ucRow=showUC?`<div class="mrow"><span class="mk">Use case</span><span style="color:var(--tx2);font-size:11px">${a.ucName||'—'}</span></div>`:'';
-    return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
-      ${descRow}
-      ${ucRow}
-      <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
-      <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
-      <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
-      ${relRow}
-      <div class="mrow"><span class="mk">Role</span><span>${a.role||'—'}</span></div>
-      <div class="mrow"><span class="mk">Process</span><span style="color:var(--mu);font-size:11px">${a.ucProcess||'—'}</span></div>
-      <div class="mrow"><span class="mk">Phase</span><span class="ph" style="background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
-      <div class="mrow"><span class="mk">Launch</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px">${a.launch?fmtD(a.launch):'—'}</span></div>
-      <div class="mpbw"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu)"><span>Progress</span><strong style="font-family:'IBM Plex Mono',monospace">${a.progress}%</strong></div><div class="mpb"><div class="mpf ${pc(a.progress)}" style="width:${a.progress}%"></div></div></div></div>`;
-  }).join('');
-  document.getElementById('mbody').innerHTML=`
-    ${lbl?`<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap"><span style="font-size:10.5px;color:var(--mu)">Launch: ${lbl}</span>${dateBadge}</div>`:''}
-    <div class="mtitle" style="margin-bottom:2px">${title||`${ags.length} Agent${ags.length>1?'s/Skills':'/Skill'}`}</div>
-    <div style="font-size:11px;color:var(--mu);margin-bottom:10px">${title?`${ags.length} agent/skill`:(ags[0]?.team||'')}</div>
-    <div class="msec">Details</div>${agh}`;
-  document.getElementById('modal').classList.add('open');
-}
-
-function drawOutCard(){
-  const out = visAgents().filter(a => {
-    const d = parseDate(a.launch);
-    return !d || !TL_MS.some(m => d >= m.start && d <= m.end);
-  });
-  const noDate = out.filter(a => !parseDate(a.launch));
-  const lateDate = out.filter(a => {
-    const d = parseDate(a.launch);
-    return d && !TL_MS.some(m => d >= m.start && d <= m.end);
-  });
-  const teams = uniq(out.map(a => a.team));
-  const agN = out.filter(a=>a.type==='agent').length;
-  const skN = out.filter(a=>a.type==='skill').length;
-  const sel = tlFilter==='out';
-
-  document.getElementById('tl-out-card').innerHTML = `
-    <div onclick="tlFilter=tlFilter==='out'?null:'out';drawTL();drawMsCards();drawOutCard()"
-      style="background:${sel?'#fffbf0':'#fffbf0'};border:${sel?'2px solid #d97706':'1.5px solid #fde68a'};border-top:3px solid #d97706;
-      border-radius:9px;padding:12px 16px;box-shadow:${sel?'0 0 0 2px #d9770640,var(--sh)':'var(--sh)'};cursor:pointer;transition:all .18s">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-        <span style="font-size:15px;font-weight:700;color:#d97706">⚠ Out of Milestone</span>
-        <span style="font-size:9.5px;color:var(--mu)">Agent/Skill ที่ไม่อยู่ใน M1–M4</span>
-        ${sel?`<span style="font-size:9px;background:#d97706;color:#fff;padding:1px 7px;border-radius:10px;font-weight:700">Active</span>`:''}
-        <div style="margin-left:auto;display:flex;gap:10px">
-          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#d97706">${out.length}</div><div style="font-size:8.5px;color:var(--mu)">Total</div></div>
-          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--ag)">${agN}</div><div style="font-size:8.5px;color:var(--mu)">Agent</div></div>
-          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--sk)">${skN}</div><div style="font-size:8.5px;color:var(--mu)">Skill</div></div>
-          ${noDate.length?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--mu)">${noDate.length}</div><div style="font-size:8.5px;color:var(--mu)">No date</div></div>`:''}
-          ${lateDate.length?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#dc2626">${lateDate.length}</div><div style="font-size:8.5px;color:var(--mu)">Outside range</div></div>`:''}
-        </div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${teams.map(t=>`<span style="font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:600;background:#d9770618;color:#d97706;border:1px solid #d9770640">${t}</span>`).join('')}
-        ${!out.length?`<span style="font-size:11px;color:var(--mu)">✓ ทุก Agent/Skill อยู่ใน milestone แล้ว</span>`:''}
-      </div>
-      <div style="font-size:8.5px;color:var(--mu);margin-top:6px;text-align:center">${sel?'Click to clear filter':'Click to filter timeline'}</div>
-    </div>`;
-}
-
-function drawMsCards(){
-  document.getElementById('tl-ms-cards').innerHTML=TL_MS.map(m=>{
-    const inM=visAgents().filter(a=>{const d=parseDate(a.launch);return d&&d>=m.start&&d<=m.end;});
-    const teams=uniq(inM.map(a=>a.team));
-    const bySt={done:0,ontime:0,risk:0,delay:0,notstart:0};
-    inM.forEach(a=>{const s=tlStatus(a);bySt[s]=(bySt[s]||0)+1;});
-    const agN=inM.filter(a=>a.type==='agent').length,skN=inM.filter(a=>a.type==='skill').length;
-    const sS=m.start.toLocaleDateString('en-GB',{day:'numeric',month:'short'}),eS=m.end.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    const sel=tlFilter===m.id;
-    return `<div onclick="tlFilter=tlFilter==='${m.id}'?null:'${m.id}';drawTL();drawMsCards()" style="background:var(--sf);border-radius:9px;padding:12px 14px;cursor:pointer;transition:all .18s;border:${sel?`2px solid ${m.color}`:'1.5px solid var(--bd)'};border-top:3px solid ${m.color};${sel?`background:${m.color}0c;box-shadow:0 0 0 2px ${m.color}40,var(--sh);`:'box-shadow:var(--sh);'}">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-        <span style="font-size:16px;font-weight:700;color:${m.color}">${m.id}</span>
-        ${sel?`<span style="font-size:9px;background:${m.color};color:#fff;padding:1px 7px;border-radius:10px;font-weight:700">Active</span>`:''}
-        <span style="font-size:9px;color:var(--mu);margin-left:auto">${sS}–${eS}</span>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-        <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${m.color}">${inM.length}</div><div style="font-size:8.5px;color:var(--mu)">Total</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--ag)">${agN}</div><div style="font-size:8.5px;color:var(--mu)">Agent</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--sk)">${skN}</div><div style="font-size:8.5px;color:var(--mu)">Skill</div></div>
-        ${(bySt.ontime||0)+(bySt.done||0)?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#15803d">${(bySt.ontime||0)+(bySt.done||0)}</div><div style="font-size:8.5px;color:var(--mu)">OK</div></div>`:''}
-        ${bySt.risk?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#d97706">${bySt.risk}</div><div style="font-size:8.5px;color:var(--mu)">Risk</div></div>`:''}
-        ${bySt.delay?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#dc2626">${bySt.delay}</div><div style="font-size:8.5px;color:var(--mu)">Late</div></div>`:''}
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:4px">
-        ${teams.map(t=>`<span style="font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:600;background:${m.color}18;color:${m.color};border:1px solid ${m.color}40">${t}</span>`).join('')}
-        ${!teams.length?`<span style="font-size:9.5px;color:var(--mu2)">No items</span>`:''}
-      </div>
-      <div style="font-size:8.5px;color:var(--mu);margin-top:6px;text-align:center">${sel?'Click to clear':'Click to filter'}</div>
-    </div>`;
-  }).join('');
-}
 
 function showToast(msg,t='i'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast ${t}`;el.style.opacity='1';setTimeout(()=>{el.style.opacity='0';},3500);}
 
