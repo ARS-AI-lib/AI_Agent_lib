@@ -840,6 +840,38 @@ function openM(ucName,ucProcess){
 }
 function closeMBg(e){if(e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
 
+// ── AGENT/SKILL DETAIL MODAL (shared by Agent Library + AI Adoption) ──
+function openAgentsModal(ags,launch,title,showUC=true){
+  const d=launch?parseDate(launch):null;
+  const lbl=d?d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):(launch||null);
+  const agh=ags.map(a=>{
+    const st=agentStatus(a);const sd=ST_DEF[st];
+    let relRow='';
+    if(a.type==='skill'){const parts=agentsOfSkill(a);if(parts.length) relRow=`<div class="mrow"><span class="mk">Agent</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;}
+    else{const sks=skillsOfAgent(a);if(sks.length) relRow=`<div class="mrow"><span class="mk">Skill</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;}
+    const descRow=a.desc&&a.desc!=='TBC'?`<div class="mrow" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="mk">Description</span><span style="color:var(--tx2);font-size:11px;line-height:1.45">${a.desc.replace(/<br\s*\/?>/gi,' ')}</span></div>`:'';
+    const ucRow=showUC?`<div class="mrow"><span class="mk">Use case</span><span style="color:var(--tx2);font-size:11px">${a.ucName||'—'}</span></div>`:'';
+    return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
+      ${descRow}
+      ${ucRow}
+      <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
+      <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
+      <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
+      ${relRow}
+      <div class="mrow"><span class="mk">Role</span><span>${a.role||'—'}</span></div>
+      <div class="mrow"><span class="mk">Process</span><span style="color:var(--mu);font-size:11px">${a.ucProcess||'—'}</span></div>
+      <div class="mrow"><span class="mk">Phase</span><span class="ph" style="background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
+      <div class="mrow"><span class="mk">Launch</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px">${a.launch?fmtD(a.launch):'—'}</span></div>
+      <div class="mpbw"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu)"><span>Progress</span><strong style="font-family:'IBM Plex Mono',monospace">${a.progress}%</strong></div><div class="mpb"><div class="mpf ${pc(a.progress)}" style="width:${a.progress}%"></div></div></div></div>`;
+  }).join('');
+  document.getElementById('mbody').innerHTML=`
+    ${lbl?`<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap"><span style="font-size:10.5px;color:var(--mu)">Launch: ${lbl}</span></div>`:''}
+    <div class="mtitle" style="margin-bottom:2px">${title||`${ags.length} Agent${ags.length>1?'s/Skills':'/Skill'}`}</div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px">${title?`${ags.length} agent/skill`:(ags[0]?.team||'')}</div>
+    <div class="msec">Details</div>${agh}`;
+  document.getElementById('modal').classList.add('open');
+}
+
 function showToast(msg,t='i'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast ${t}`;el.style.opacity='1';setTimeout(()=>{el.style.opacity='0';},3500);}
 
 
