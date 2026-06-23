@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gen AI SDLC Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f4f8;--sf:#fff;--sf2:#f0f2f7;--sf3:#e6e9f2;
+  --bd:#dde1ec;--bd2:#c8cde0;
+  --tx:#1a2236;--tx2:#3d4a6b;--mu:#7a85a3;--mu2:#a8b0c5;
+  --ci:#c2590a;--cd:#1558b0;--cde:#6d28d9;--cb:#0b7a68;--ct:#92400e;--cdp:#991b1b;--ca:#9d174d;
+  --ag:#1558b0;--sk:#0b7a68;
+  --ph:#15803d;--pm:#6d28d9;--pl:#9ca3af;--uc:#b45309;
+  --ok:#15803d;--warn:#d97706;--late:#dc2626;--tbd:#6b7280;
+  --sh:0 1px 3px rgba(0,0,0,.07);--shm:0 4px 14px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans Thai',sans-serif;background:var(--bg);color:var(--tx);font-size:14px;min-height:100vh}
+
+/* NAV */
+nav{background:var(--sf);border-bottom:2px solid var(--bd);display:flex;align-items:stretch;padding:0 24px;box-shadow:var(--sh);position:sticky;top:0;z-index:60}
+.nav-brand{display:flex;align-items:center;padding:0 16px 0 0;border-right:1px solid var(--bd);margin-right:10px;flex-shrink:0}
+.nav-brand h1{font-size:16px;font-weight:700;color:var(--tx);white-space:nowrap}
+.nav-brand p{font-size:9.5px;color:var(--mu);margin-top:1px}
+.tab{padding:0 16px;border:none;background:none;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;font-size:13px;font-weight:600;color:var(--mu);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;height:48px;flex-shrink:0;white-space:nowrap}
+.tab:hover{color:var(--ag)}.tab.on{color:var(--ag);border-bottom-color:var(--ag)}
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:8px;padding:8px 0}
+.chips{display:flex;gap:5px}
+.chip{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:5px 11px;text-align:center;min-width:54px}
+.chip .n{font-size:17px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1.1}
+.chip .l{font-size:9px;color:var(--mu);margin-top:1px;white-space:nowrap}
+.c-uc .n{color:var(--cd)}.c-ag .n{color:var(--ag)}.c-sk .n{color:var(--sk)}
+.btnref{width:28px;height:28px;border-radius:6px;border:1px solid var(--bd2);background:var(--sf2);color:var(--mu);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.btnref:hover{border-color:var(--ag);color:var(--ag)}
+.btnref.loading svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rts{font-size:9px;color:var(--mu2)}
+
+/* PAGES */
+.page{display:none}.page.on{display:block}
+
+/* LEGEND */
+.legend{padding:5px 24px;background:var(--sf2);border-bottom:1px solid var(--bd);display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.lg{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--mu)}
+.ld{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.lsep{width:1px;height:12px;background:var(--bd2)}
+
+/* CONTROLS */
+.cbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:6px 24px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.cg{display:flex;align-items:center;gap:4px;position:relative}
+.cl{font-size:10px;font-weight:700;color:var(--mu);letter-spacing:.05em;white-space:nowrap}
+select.dd{padding:4px 20px 4px 8px;border-radius:6px;border:1.5px solid var(--bd2);background:var(--sf2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a85a3'/%3E%3C/svg%3E") no-repeat right 6px center;appearance:none;font-family:'IBM Plex Sans Thai',sans-serif;font-size:11.5px;color:var(--tx2);cursor:pointer;outline:none;min-width:105px}
+select.dd:focus{border-color:var(--ag)}
+.btnclr{width:22px;height:22px;border-radius:5px;border:1px solid #fca5a5;background:#fff5f5;color:#b91c1c;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s}
+.btnclr:hover{background:#b91c1c;color:#fff}
+.csep{width:1px;height:16px;background:var(--bd)}
+/* multi-select dropdown */
+.ms-wrap{position:relative;display:inline-block}
+.ms-btn{padding:4px 22px 4px 8px;border-radius:6px;border:1.5px solid var(--bd2);background:var(--sf2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a85a3'/%3E%3C/svg%3E") no-repeat right 6px center;font-family:'IBM Plex Sans Thai',sans-serif;font-size:11.5px;color:var(--tx2);cursor:pointer;outline:none;min-width:110px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.ms-btn.active{border-color:var(--ag);background-color:var(--sf2)}
+.ms-btn.has-sel{border-color:var(--uc);color:var(--uc);font-weight:600}
+.ms-list{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:999;background:var(--sf);border:1.5px solid var(--bd2);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:160px;max-height:240px;overflow-y:auto;padding:4px 0}
+.ms-list.open{display:block}
+.ms-item{display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap}
+.ms-item:hover{background:var(--sf2)}
+.ms-item input[type=checkbox]{accent-color:var(--uc);cursor:pointer;width:13px;height:13px}
+.ms-item.checked{color:var(--uc);font-weight:600}
+.pill{padding:4px 11px;border-radius:20px;border:1.5px solid var(--bd2);background:var(--sf2);color:var(--tx2);font-size:11.5px;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;transition:all .18s;white-space:nowrap}
+.pill.on{background:var(--uc);border-color:var(--uc);color:#fff;font-weight:600}
+.pill:not(.on):hover{border-color:var(--uc);color:var(--uc)}
+
+/* MAIN */
+.main{padding:14px 24px 48px}
+
+/* SECTION */
+.sb{margin-bottom:22px}
+.sh{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid var(--bd)}
+.sbar{width:4px;height:20px;border-radius:3px;flex-shrink:0}
+.sname{font-size:15px;font-weight:700}
+.sbadge{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);color:var(--mu);font-family:'IBM Plex Mono',monospace}
+.scov{margin-left:auto;font-size:11px;color:var(--mu)}
+.orph-row{margin-top:14px;padding-top:12px;border-top:1px dashed var(--bd)}
+.orph-lbl{font-size:11px;font-weight:700;color:#d97706;margin-bottom:8px;padding-left:2px}
+.scov strong{font-family:'IBM Plex Mono',monospace}
+
+/* UC CARDS */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
+.card{background:var(--sf);border:1.5px solid var(--bd);border-radius:9px;padding:10px 12px;position:relative;cursor:pointer;transition:all .18s;box-shadow:var(--sh);overflow:hidden}
+.card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:9px 9px 0 0}
+.card.cov{border-color:#f5c07a;background:#fffdf7}.card.cov::after{background:linear-gradient(90deg,var(--uc),#f5a623)}
+.card.emp::after{background:var(--bd2)}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shm)}
+.cmeta{display:flex;align-items:center;gap:5px;margin-bottom:4px;flex-wrap:wrap}
+.cid{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--mu2)}
+.cproc{font-size:9.5px;padding:1px 6px;border-radius:3px;font-weight:600;white-space:nowrap}
+.cname{font-size:12.5px;font-weight:700;color:var(--tx);margin-bottom:4px;line-height:1.35}
+.alist{display:flex;flex-direction:column;gap:4px}
+.arow{background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:6px 9px;display:flex;align-items:flex-start;gap:6px}
+.arow.ag{border-left:3px solid var(--ag)}.arow.sk{border-left:3px solid var(--sk)}
+.tb{font-size:8.5px;font-weight:700;letter-spacing:.05em;padding:1px 5px;border-radius:3px;flex-shrink:0;margin-top:1px;text-transform:uppercase}
+.tbag{background:#dbeafe;color:var(--ag);border:1px solid #93c5fd}
+.tbsk{background:#d1faf5;color:var(--sk);border:1px solid #5eead4}
+.abody{flex:1;min-width:0}
+.aname{font-size:11.5px;font-weight:600;color:var(--tx)}
+.afoot{display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap}
+.ph{font-size:9px;font-weight:600;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.02em}
+.pht{background:#fef3c7;color:#92400e}.phb{background:#dbeafe;color:#1558b0}
+.php{background:#d1faf5;color:#0b7a68}.phd{background:#ede9fe;color:#6d28d9}
+.phi{background:#f3f4f6;color:#6b7280}.phl{background:#dcfce7;color:#15803d}
+.ttag{font-size:9px;background:var(--sf3);border:1px solid var(--bd2);color:var(--tx2);padding:1px 5px;border-radius:3px}
+.dtag{font-size:9px;color:var(--mu2);font-family:'IBM Plex Mono',monospace}
+.prow{display:flex;align-items:center;gap:5px;margin-top:4px}
+.pbar{flex:1;height:4px;background:var(--sf3);border-radius:2px;overflow:hidden;min-width:32px}
+.pfill{height:100%;border-radius:2px;transition:width .7s}
+.pfh{background:var(--ph)}.pfm{background:var(--pm)}.pfl{background:var(--pl)}
+.ppct{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--mu);min-width:26px;text-align:right}
+.ecap{display:inline-flex;align-items:center;gap:4px;background:#f0f2f7;border:1px solid #dde1ec;border-radius:20px;padding:3px 10px;font-size:10px;color:var(--mu);margin:3px 0}
+.edot{width:5px;height:5px;border-radius:50%;background:var(--mu2)}
+
+/* AGENT CARDS */
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:8px;margin-top:8px}
+.ac{background:var(--sf);border:1.5px solid var(--bd);border-radius:9px;padding:11px 13px;box-shadow:var(--sh);transition:all .18s}
+.ac:hover{box-shadow:var(--shm);transform:translateY(-1px)}
+.ac.isag{border-left:4px solid var(--ag)}.ac.issk{border-left:4px solid var(--sk)}.ac.orp{border-top:3px solid #d1d5db}
+.achdr{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.acname{font-size:12.5px;font-weight:700;color:var(--tx)}
+.acrows{display:flex;flex-direction:column;gap:3px}
+.acrow{display:flex;gap:5px;align-items:flex-start;font-size:11.5px}
+.ack{color:var(--mu);min-width:70px;flex-shrink:0}
+.oban{background:#fffbf0;border:1.5px solid #fde68a;border-radius:9px;padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12.5px}
+
+/* MODAL */
+.mov{display:none;position:fixed;inset:0;background:rgba(26,34,54,.45);z-index:200;backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px}
+.mov.open{display:flex}
+.mbox{background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;width:100%;max-width:510px;max-height:87vh;overflow-y:auto;padding:20px;position:relative;box-shadow:var(--shm)}
+.mclose{position:absolute;top:10px;right:10px;width:24px;height:24px;background:var(--sf2);border:1px solid var(--bd);border-radius:5px;cursor:pointer;color:var(--mu);font-size:13px;display:flex;align-items:center;justify-content:center}
+.mclose:hover{color:var(--tx)}
+.mtitle{font-size:15px;font-weight:700;margin-bottom:2px}.msub{font-size:11.5px;color:var(--mu);margin-bottom:12px}
+.msec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin:10px 0 6px}
+.mac{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:10px 12px;margin-bottom:7px}
+.machdr{display:flex;align-items:center;gap:6px;margin-bottom:6px}.macname{font-size:12.5px;font-weight:700;color:var(--tx)}
+.mrow{display:flex;gap:7px;align-items:flex-start;font-size:11.5px;margin-bottom:3px;flex-wrap:wrap}
+.mk{color:var(--mu);min-width:76px;flex-shrink:0}
+.mpbw{margin-top:7px}.mpb{height:5px;background:var(--sf3);border-radius:3px;overflow:hidden;margin-top:3px}.mpf{height:100%;border-radius:3px}
+.ls-ok{background:#dcfce7;color:#14532d;border:1px solid #86efac;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:600}
+.ls-warn{background:#fef3c7;color:#78350f;border:1px solid #fcd34d;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:600}
+.ls-late{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:600}
+.ls-tbd{background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:2px 7px;border-radius:4px;font-size:9.5px;font-weight:600}
+
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:7px;font-size:12.5px;font-weight:600;z-index:300;box-shadow:var(--shm);transition:opacity .3s;pointer-events:none}
+.toast.s{background:#dcfce7;color:#14532d;border:1px solid #86efac}
+.toast.e{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5}
+.toast.i{background:#dbeafe;color:#1e3a5f;border:1px solid #93c5fd}
+
+#lov{display:none;position:fixed;inset:0;background:rgba(242,244,248,.85);z-index:150;align-items:center;justify-content:center;flex-direction:column;gap:10px;font-size:15px;color:var(--ag);font-weight:600}
+#lov.show{display:flex}
+.spin{width:30px;height:30px;border:3px solid var(--bd);border-top-color:var(--ag);border-radius:50%;animation:spin .8s linear infinite}
+
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+@media(max-width:700px){nav,.cbar,.legend,.main,.tl-wrap{padding-left:14px;padding-right:14px}.grid,.agrid{grid-template-columns:1fr}}
+/* ── AI ADOPTION PAGE ── */
+.adopt-wrap{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.adopt-topbar{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 24px 10px;flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd);gap:12px;flex-wrap:wrap}
+.adopt-title-txt{font-size:15px;font-weight:700;color:var(--tx)}
+.adopt-legend-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0}
+.aleg-item{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:5px;border:1px solid;white-space:nowrap}
+.aleg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.aleg-ns{color:#6b7280;background:#f9fafb;border-color:#e5e7eb}.aleg-ns .aleg-dot{background:#9ca3af}
+.aleg-td{color:#3d5a8e;background:#edf2f9;border-color:#b0c4de}.aleg-td .aleg-dot{background:#4a6fa5}
+.aleg-ip{color:#92400e;background:#fffbeb;border-color:#fde68a}.aleg-ip .aleg-dot{background:#f5a623}
+.aleg-pilot{color:#5a6b1c;background:#f4f6e5;border-color:#c5d06a}.aleg-pilot .aleg-dot{background:#8ea82a}
+.aleg-ru{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}.aleg-ru .aleg-dot{background:#15803d}
+.aleg-cnt{font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;padding:0 4px 0 6px;min-width:24px;text-align:right}
+.aleg-pct{font-size:9px;opacity:.65;background:currentColor;color:#fff;padding:1px 4px;border-radius:8px;white-space:nowrap}
+.aleg-pct{color:#fff!important;background:currentColor}
+.aleg-ns .aleg-pct{background:#9ca3af}.aleg-td .aleg-pct{background:#4a6fa5}
+.aleg-ip .aleg-pct{background:#f5a623}.aleg-pilot .aleg-pct{background:#8ea82a}.aleg-ru .aleg-pct{background:#15803d}
+.adopt-scroll{overflow:auto;flex:1;padding:16px 20px 32px;-webkit-overflow-scrolling:touch}
+.adopt-board{display:flex;width:100%;min-width:780px;border:1.5px solid var(--bd2);border-radius:10px;overflow:hidden;box-shadow:var(--shm)}
+.adopt-grp{display:flex;flex-direction:column;border-right:2px solid var(--bd2);min-width:0}
+.adopt-grp:last-child{border-right:none}
+.adopt-grp-hdr{background:#1a2e50;color:#fff;text-align:center;font-weight:700;font-size:12px;padding:9px 14px;letter-spacing:.04em;white-space:nowrap}
+.adopt-sub-row{display:flex;flex:1}
+.adopt-subcol{display:flex;flex-direction:column;border-right:1px solid var(--bd);min-width:120px;flex:1;min-width:0}
+.adopt-subcol:last-child{border-right:none}
+.adopt-sub-hdr{text-align:center;font-weight:700;font-size:10px;padding:7px 6px;letter-spacing:.04em;white-space:nowrap}
+.adopt-cards{padding:6px;display:flex;flex-direction:column;gap:5px;background:var(--bg);flex:1}
+.aproc{padding:8px 9px;border-radius:7px;cursor:pointer;transition:all .15s;border:1.5px solid}
+.aproc:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.13)}
+.aproc.ns{background:#fff;border-color:#e5e7eb}
+.aproc.td{background:#edf2f9;border-color:#b0c4de}
+.aproc.ip{background:#fffbeb;border-color:#fcd34d;box-shadow:inset 3px 0 0 #f5a623}
+.aproc.pilot{background:#f4f6e5;border-color:#c5d06a;box-shadow:inset 3px 0 0 #8ea82a}
+.aproc.ru{background:#f0fdf4;border-color:#6ee7b7;box-shadow:inset 3px 0 0 #15803d}
+/* Accent bar: dominant status is 'ns' (Not Start by count) but the card actually has agents —
+   a fixed dark-gray left bar signals "not really empty", without implying a specific status color. */
+.aproc.ns.has-progress{box-shadow:inset 3px 0 0 #4b5563}
+/* Truly empty (zero agents) cards stay plain — never get an accent bar */
+.aproc.empty{background:#fff;border-color:#e5e7eb;box-shadow:none}
+.aproc-num{font-weight:700;font-size:11px;font-family:'IBM Plex Mono',monospace;margin-bottom:2px}
+.aproc.ns .aproc-num{color:#9ca3af}.aproc.td .aproc-num{color:#4a6fa5}
+.aproc.ip .aproc-num{color:#b45309}.aproc.ru .aproc-num{color:#15803d}
+.aproc-name{font-size:9.5px;color:var(--tx2);line-height:1.3;word-break:break-word}
+.aproc-count{font-size:8.5px;margin-top:5px;font-weight:600;opacity:.9}
+.aproc.ns .aproc-count{color:#9ca3af}.aproc.td .aproc-count{color:#4a6fa5}
+.aproc.ip .aproc-count{color:#b45309}.aproc.pilot .aproc-count{color:#5a6b1c}.aproc.ru .aproc-count{color:#15803d}
+/* ── NAV SEARCH ── */
+.nav-search{flex:1;display:flex;align-items:center;justify-content:center;padding:0 12px;min-width:0}
+.nav-search-wrap{position:relative;width:100%;max-width:320px}
+.nav-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--mu)}
+.nav-search-inp{width:100%;padding:6px 12px 6px 32px;border:1.5px solid var(--bd);border-radius:20px;font-size:12.5px;font-family:'IBM Plex Sans Thai',sans-serif;background:var(--sf2);color:var(--tx);outline:none;transition:border .2s,box-shadow .2s}
+.nav-search-inp:focus{border-color:var(--ag);background:var(--sf);box-shadow:0 0 0 3px rgba(21,88,176,.1)}
+.nav-search-inp::placeholder{color:var(--mu2)}
+</style>
+</head>
+<body>
+
+<div id="lov"><div class="spin"></div><span id="lovmsg">Loading…</span></div>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-brand"><div><h1>Gen AI SDLC</h1><p>Dashboard</p></div></div>
+  <button class="tab on" id="tab-lib" onclick="switchTab('lib')">Agent Library</button>
+  <button class="tab"    id="tab-adopt" onclick="switchTab('adopt')">SDLC AI Adoption</button>
+  <button class="tab"    id="tab-tl"  onclick="switchTab('tl')">SDLC Timeline</button>
+  <div class="nav-search">
+    <div class="nav-search-wrap">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="navSearch" class="nav-search-inp" placeholder="Search name or team…"
+             oninput="vSearch=this.value.trim().toLowerCase();renderAll()">
+      <button id="navSearchClear" onclick="vSearch='';document.getElementById('navSearch').value='';renderAll()" title="Clear search"
+        style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--mu);font-size:14px;line-height:1;padding:2px 4px">✕</button>
+    </div>
+  </div>
+  <div class="nav-r">
+    <div class="chips">
+      <div class="chip c-ag"><div class="n" id="s-ag">—</div><div class="l">Agents</div></div>
+      <div class="chip c-sk"><div class="n" id="s-sk">—</div><div class="l">Skills</div></div>
+      <div class="chip c-uc"><div class="n" id="s-uc">—</div><div class="l">Use cases</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <button class="btnref" id="btnref" title="Refresh from Google Sheets" onclick="loadData()">
+        <svg id="ri" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+      </button>
+      <span class="rts" id="rts"></span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── PAGE: AGENT LIBRARY ── -->
+<div class="page on" id="page-lib">
+  <div class="legend" id="lib-legend"></div>
+  <div class="cbar" id="cbar"></div>
+  <div class="main" id="main-lib"><div style="text-align:center;padding:50px;color:var(--mu)">Loading…</div></div>
+</div>
+
+<!-- ── PAGE: AI ADOPTION ── -->
+<div class="page" id="page-adopt">
+  <div class="legend" id="adopt-status-legend"></div>
+  <div class="cbar" id="cbar-adopt"></div>
+  <div class="adopt-wrap">
+    <div class="adopt-topbar">
+      <div>
+        <div class="adopt-title-txt" id="adopt-title-txt">SDLC Process Overview</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:1px" id="adopt-title-sub">AI Adoption status across SDLC processes</div>
+      </div>
+    </div>
+    <div class="adopt-scroll">
+      <div class="adopt-board" id="adopt-board"></div>
+    </div>
+    <div class="main" id="main-adopt-uc" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── PAGE: TIMELINE ── -->
+<div class="page" id="page-tl">
+  <div style="padding:20px 28px 52px">
+    <div id="tl-main">
+      <div id="tl-legend" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:9px 14px;background:var(--sf);border:1.5px solid var(--bd);border-radius:8px;box-shadow:var(--sh)"></div>
+      <div style="background:var(--sf);border:1.5px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:14px;box-shadow:var(--sh)">
+        <div style="background:#1e2d4a;color:#fff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:13.5px;font-weight:700">Generative AI for SDLC — Launch Timeline</div>
+            <div style="font-size:10.5px;color:#8fa6c8;margin-top:2px">Click icon → agent details · Click milestone card → filter</div>
+          </div>
+          <div style="font-size:11px;color:#8fa6c8">May – Sep 2026</div>
+        </div>
+        <div style="overflow-x:auto"><canvas id="tl-canvas" style="display:block;cursor:default"></canvas></div>
+      </div>
+      <div id="tl-ms-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px"></div>
+      <div id="tl-out-card"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL ── -->
+<div class="mov" id="modal" onclick="closeMBg(event)">
+  <div class="mbox"><button class="mclose" onclick="document.getElementById('modal').classList.remove('open')">✕</button><div id="mbody"></div></div>
+</div>
+<div id="toast" class="toast" style="opacity:0"></div>
+
+<script>
+function parseCSV(txt){
+  const rows=[];
+  for(const line of txt.split('\n')){
+    if(!line.trim()) continue;
+    const cells=[];let cell='',q=false;
+    for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){q=!q;continue;}if(c===','&&!q){cells.push(cell.trim());cell='';}else cell+=c;}
+    cells.push(cell.trim());rows.push(cells);
+  }
+  return rows;
+}
+function parseUCSheet(rows){
+  if(!rows||rows.length<2) return null;
+  const h=rows[0].map(c=>c.toLowerCase().trim());
+  const iS=h.findIndex(x=>x.includes('stage')),iP=h.findIndex(x=>x.includes('process'));
+  if(iS<0||iP<0) return null;
+  const uS=Math.max(iS,iP)+1,uC=[];
+  for(let c=uS;c<Math.min(uS+5,h.length);c++) uC.push(c);
+  if(!uC.length) return null;
+  const out=[];let lS='',lP='';
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    const s=(r[iS]||'').trim()||lS,p=(r[iP]||'').trim()||lP;
+    if(!s&&!p) continue;
+    if(s) lS=s; if(p) lP=p;
+    for(const ci of uC){const n=(r[ci]||'').trim();if(n) out.push({stage:s,process:p,name:n});}
+  }
+  return out.length?out:null;
+}
+function parseAgentSheet(rows){
+  if(!rows||rows.length<2) return null;
+  const h=rows[0].map(c=>c.toLowerCase().replace(/[\s_.]/g,''));
+  const gi=k=>h.findIndex(x=>x.includes(k));
+  const iN=gi('agentname')>=0?gi('agentname'):(gi('name')>=0?gi('name'):2);
+  const [iA,iSk,iT,iU,iPr,iSt,iPh,iPg,iL,iO,iAb,iR]=[gi('aiagent'),gi('skill'),gi('team'),gi('usecase'),gi('sdlcprocess')>=0?gi('sdlcprocess'):gi('process'),gi('sdlcstage')>=0?gi('sdlcstage'):gi('stage'),gi('developmentphase')>=0?gi('developmentphase'):gi('phase'),gi('devprogress')>=0?gi('devprogress'):gi('progress'),gi('launchdate')>=0?gi('launchdate'):gi('launch'),gi('owner'),gi('coreability')>=0?gi('coreability'):gi('ability'),gi('relatedrole')>=0?gi('relatedrole'):gi('role')];
+  const iM=gi('matchingagent');
+  const iD=gi('description');
+  const iS=gi('status');
+  const g=(r,i)=>i>=0&&i<r.length?(r[i]||'').trim():'';
+  const bool=v=>v.toLowerCase()==='true'||v==='1';
+  const out=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];const n=g(r,iN);if(!n) continue;
+    const prRaw=g(r,iPg);
+    let pr;
+    if(prRaw.includes('%')){
+      pr=parseInt(prRaw.replace('%',''))||0;   // "70%" → 70
+    }else{
+      const n=parseFloat(prRaw);
+      if(isNaN(n)) pr=0;
+      else if(n>1) pr=Math.round(n);           // "70" → 70 (already integer)
+      else pr=Math.round(n*100);               // 0.7→70, 1→100 (GSheets decimal)
+    }
+    out.push({name:n,type:(!bool(g(r,iA))&&bool(g(r,iSk)))?'skill':'agent',team:g(r,iT),ucName:g(r,iU),ucProcess:g(r,iPr),stage:g(r,iSt),phase:g(r,iPh),progress:isNaN(pr)?0:pr,launch:g(r,iL),owner:g(r,iO),ability:g(r,iAb),role:g(r,iR),matchingAgent:g(r,iM),desc:g(r,iD),status:g(r,iS)});
+  }
+  return out.length?out:null;
+}
+
+// ── STATE ──
+let UCS=[],AGENTS=[];
+// Agent Library: vView in {by-team, by-role, by-ability}; vType filter; multi-select ability/team/role
+// AI Adoption: vSDLC toggle (process vs usecase view), vAdoptView in {by-stage, by-process}, vStage, vHasAgent
+let vSDLC=false,vHasAgent=false,vView='by-team',vAdoptView='by-stage',vStage='all',vType='all',vSearch='';
+let vAbility=new Set(),vTeam=new Set(),vRole=new Set();
+
+// Agents filtered by current search + Team/Role/Ability (shared across Agent Library + AI Adoption)
+const visAgents=()=>AGENTS.filter(a=>{
+  if(vAbility.size>0&&!vAbility.has(a.ability||'')) return false;
+  if(vTeam.size>0&&!vTeam.has(a.team||'')) return false;
+  if(vRole.size>0){const roles=(a.role||'').split(/[,\/]/).map(r=>r.trim());if(!roles.some(r=>vRole.has(r))) return false;}
+  if(vSearch){const q=vSearch.toLowerCase();return (a.name||'').toLowerCase().includes(q)||(a.team||'').toLowerCase().includes(q);}
+  return true;
+});
+let curPage='lib';
+const SO=['Initiation','Discovery','Design','Build','Test','Deployment','Post Development','Across Phase'];
+const SC={Initiation:'#c2590a',Discovery:'#1558b0',Design:'#6d28d9',Build:'#0b7a68',Test:'#92400e',Deployment:'#991b1b','Post Development':'#9d174d','Across Phase':'#9d174d'};
+const sc=s=>SC[s]||'#7a85a3';
+
+// ── GOOGLE SHEETS CONFIG ──
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwhj6QKTkjcFzKU71xoalyloSyWufbkQllluvT25QHbQ5xCe1oYXlKBS9vIrmRqoEc/exec';
+const SID='16UUi0oLkJr8YXu7J33-FvJxiEMUcE8cqyNHE4aYpfDc';
+const csvUrl=g=>`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&gid=${g}`;
+
+// Convert [{ColName: val, ...}, ...] → [[header,...],[val,...],...]
+function objectArrayToRows(arr){
+  if(!arr||!arr.length) return null;
+  const headers=Object.keys(arr[0]);
+  const rows=arr.map(obj=>headers.map(h=>String(obj[h]??'')));
+  return[headers,...rows];
+}
+
+async function loadData(){
+  const btn=document.getElementById('btnref');
+  btn.classList.add('loading');
+  document.getElementById('lov').classList.add('show');
+  document.getElementById('lovmsg').textContent='Loading from Google Sheets…';
+
+  // Remove any previous JSONP script tag
+  const old=document.getElementById('jsonpScript');
+  if(old) old.remove();
+
+  const cbName='dashboardCb_'+Date.now();
+
+  const timer=setTimeout(()=>{
+    delete window[cbName];
+    btn.classList.remove('loading');
+    document.getElementById('lov').classList.remove('show');
+    loadFallback();
+    document.getElementById('rts').textContent='timeout / fallback';
+    showToast('Apps Script timeout — showing fallback data','e');
+    renderAll();if(curPage==='tl') renderTL();if(curPage==='adopt') renderAdopt();
+  },12000);
+
+  window[cbName]=function(json){
+    console.log('[CALLBACK START] Apps Script response received');
+    clearTimeout(timer);
+    delete window[cbName];
+    btn.classList.remove('loading');
+    document.getElementById('lov').classList.remove('show');
+    try{
+      console.log('[DATA] json type:', typeof json, 'json.data type:', Array.isArray(json.data) ? 'array' : typeof json.data);
+      if(!json.data||!Array.isArray(json.data)) throw new Error('รูปแบบข้อมูลไม่ถูกต้อง — ตรวจสอบ Apps Script');
+      console.log('[DEBUG] Raw json.data[0]:', json.data[0]);
+      const rows=objectArrayToRows(json.data.filter(r=>r['Agent Name']||r['agent name']));
+      console.log('[DEBUG] Parsed rows[0] (header):', rows[0]);
+      console.log('[DEBUG] Parsed rows[1] (first agent):', rows[1]);
+      if(!rows) throw new Error('ไม่พบข้อมูลใน Sheet');
+      const pA=parseAgentSheet(rows);
+      console.log('[DEBUG] Parsed AGENTS[0]:', pA[0]);
+      if(!pA||!pA.length) throw new Error('Parse agent ไม่สำเร็จ — ตรวจสอบ column headers');
+      loadFallback(); AGENTS=pA;
+      const now=new Date().toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'});
+      document.getElementById('rts').textContent=now;
+      console.log('[SUCCESS] Loaded', AGENTS.length, 'agents');
+      showToast(`✓ Loaded ${AGENTS.length} agents from Google Sheets`,'s');
+    }catch(e){
+      console.error('[CALLBACK ERROR]', e);
+      loadFallback();
+      document.getElementById('rts').textContent='error / fallback';
+      showToast(`⚠ ${e.message}`,'e');
+      console.error('[loadData callback]',e.message);
+    }
+    renderAll();if(curPage==='tl') renderTL();if(curPage==='adopt') renderAdopt();
+  };
+
+  const script=document.createElement('script');
+  script.id='jsonpScript';
+  script.src=SCRIPT_URL+'?callback='+cbName;
+  script.onerror=()=>{
+    clearTimeout(timer);
+    delete window[cbName];
+    btn.classList.remove('loading');
+    document.getElementById('lov').classList.remove('show');
+    loadFallback();
+    document.getElementById('rts').textContent='error / fallback';
+    showToast('โหลด Script ไม่สำเร็จ — ตรวจสอบ Deployment ID และสิทธิ์ "Anyone"','e');
+    renderAll();if(curPage==='tl') renderTL();if(curPage==='adopt') renderAdopt();
+  };
+  document.head.appendChild(script);
+}
+
+function loadFallback(){
+  const FB=[['Initiation','1.1 Feasibility Study','System Impact & Diagram Assistant'],['Initiation','1.2 Deep Research & Benchmark','Business Research Support Tool','User Screen Generator','Financial Projection Support Tool'],['Initiation','1.3 Proposal and TOR','Vendor Proposal Compliance Validator','Vendor Sourcing & Qualification Assistant','MoM Generator','Contract Validator Assistant','Contract Monitoring Assistant'],['Initiation','1.4 Legal & Compliance','Requirement Refiner Assistant','Requirement Change Navigator'],['Initiation','1.5 Requirement Exploration','Requirement Refiner Assistant'],['Initiation','1.6 Project Initiation & Resource Planning','PC Document Control Assistant','MoM Generator','Open Issue Tracker'],['Discovery','2.1 Requirement Gathering','Requirement Refiner Assistant','MoM Generator','Open Issue Tracker'],['Discovery','2.2 High-level User Story Development','User Story & Epic Generator','User Story Change Tracker','User Story Curator','MoM Generator','Open Issue Tracker'],['Design','3.1 User Experience Research','Research Insight Centralization','Research Insight Analyzer','Research Report Generator','Research Prep Assistant'],['Design','3.2 User Journey Design','Initial User Journey Creation','Cross-Team Feedback Management'],['Design','3.3 User Interface Design (Low-fi)','Design Input Readiness','Draft Copy Assistant','Cross-Team Feedback Management'],['Design','4.1 High-level Design','System Design Gap & Impacts Analyzer','System Design Initiator','System Design Updater'],['Design','4.2 Effort Estimation','System Design Inventory Consolidator','System Design Estimator'],['Design','5.1 Data Insight & Analysis','Data Specification Assistant','Data Analytics Assistant'],['Design','6.1 Ideation & Planning','JO Deck Generator','PC Document Control Assistant','Project Stakeholder Directory Assistant','Detailed Project Timeline Assistant'],['Design','6.2 Project Governance','MoM Generator','Timeline Change Detector and Risk Validation'],['Design','7.1 Detailed User Story Development','User Story Readiness','Business and Functional Design Summarizer'],['Design','7.2 Development Support','User Story Curator','UXW Change Tracker Assistant','MoM Generator'],['Design','7.3 Test Support','User Story Curator','UXW Change Tracker Assistant','Test Case Generation & Fulfillment','Critical Defect Alert','Defect Severity and Priority Assessment'],['Design','7.4 Deployment Support','Release Scope Summarizer'],['Design','8.1 User Interface Design (Hi-fi)','Design Input Readiness','Design System Updates','Hi-Fi Design Quality Check','Cross-Team Feedback Management'],['Design','8.2 Copywriting','UXW Style Guide Creation','UXW Scope & Effort Estimation','UXW Style Guide Alignment','UXW Change Tracker Assistant'],['Design','9.1 Detailed Design','Entity Detailed Designer','API Detailed Designer'],['Build','10.1 Development','Assist Write Code Build Locally','Assisted Code Review'],['Build','10.2 Unit Test','Assist Write Code Build Locally'],['Build','10.3 Code Review','Assisted Code Review','Assisted Senior Code Review'],['Build','10.4 Test Support','Test Data Setup and Teardown Scripts','Root Cause Analysis and Fix Suggestion for Defects'],['Test','11.1 Test Approach','Document Change Detection','Test Scope Definition and Validation'],['Test','11.2 Test Case Development','Knowledge Base Agent (Test Management)','Test Case Generation & Fulfillment','Change Impact & Re-work Minimization'],['Test','11.3 Defect Management','Defect Triage & Quality Validator','Duplicate & Related Defect Detector','Defect Severity and Priority Assessment'],['Test','12.1 SIT Test Data Preparation','Centralized Document Assistant','Test Data Access Assistant','Test Data Validator','Self-service test data creation'],['Test','12.2 SIT Test Execution','Test Execution Optimizer','Test Artifact Synchronization','Progress Advisor','Daily Summary & Progress Report'],['Test','13.1 UAT Test Data Preparation','Self-service test data creation','Test Data Generator','Test Data Access Assistant','Test Data Validator','Centralized Document Assistant'],['Test','13.2 UAT Test Execution','Test Execution Optimizer','Test Artifact Synchronization','Progress Advisor','Daily Summary & Progress Report'],['Deployment','14.1 Runbook Development','Runbook Items Initiator','Runbook Reviewer'],['Deployment','14.2A IVT Test Case Development','IVT Test Case Auto-Generator'],['Deployment','14.2B PVT Test Case Development','PVT Test Case Generator'],['Deployment','14.3A IVT Test Case Execution','IVT Test Execution Assistant, Logger & Progress Reporter'],['Deployment','14.3B PVT Test Case Execution','IVT Test Execution Assistant, Logger & Progress Reporter','Test Artifact Synchronization'],['Deployment','14.4 CAB Document & Presentation','Change Ticket & CAB Preparation Assistant']];
+  UCS=[];for(const[s,p,...us] of FB) for(const n of us) if(n) UCS.push({stage:s,process:p,name:n});
+  AGENTS=[
+{name:'Epic Writer',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Testing',progress:70,launch:'3/15/2026',owner:'Tanyarat Ruedeesirichot',ability:'Documentation',role:'BA , PO'},
+    {name:'User Story Writer',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Testing',progress:70,launch:'6/1/2026',owner:'Tanyarat Ruedeesirichot',ability:'Documentation',role:'BA'},
+    {name:'Product Inquiry Agent (Story Maker Chat agent)',type:'skill',team:'Wolfy',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Build',progress:30,launch:'6/30/2026',owner:'Tanyarat Ruedeesirichot',ability:'Documentation',role:'BA'},
+    {name:'UX Writer AI Agent (VB)',type:'agent',team:'Digital Experience Team',ucName:'UXW Style Guide Alignment',ucProcess:'8.2 Copywriting',stage:'Design',phase:'Build',progress:60,launch:'8/1/2026',owner:'Chanchai Chotwiriya',ability:'Documentation',role:'UX Writer, UX Designer, UI Designer'},
+    {name:'po-ba (Product Owner / BA)',type:'agent',team:'Development',ucName:'User Story & Epic Generator',ucProcess:'2.2 High-Level User Story Development',stage:'Discovery',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Documentation',role:'PO/BA'},
+    {name:'system-architect',type:'agent',team:'Development',ucName:'System Design Initiator',ucProcess:'4.1 High-Level Design',stage:'Design',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Decision Making',role:'SA'},
+    {name:'tech-lead (Scrum Master + Code Gatekeeper)',type:'agent',team:'Development',ucName:'Assisted Senior Code Review',ucProcess:'10.3 Code Review',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Project Management',role:'Tech Lead'},
+    {name:'tester (QA)',type:'agent',team:'Development',ucName:'Test Case Generation & Fulfillment',ucProcess:'11.2 Test Case Development',stage:'Test',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Testing & QA',role:'Tester'},
+    {name:'be-dev (Golang TDD Worker)',type:'agent',team:'Development',ucName:'Assist Write Code Build Locally',ucProcess:'10.1 Development',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Code Generation',role:'Backend Engineer'},
+    {name:'fe-dev (Next.js CSR TDD Worker)',type:'agent',team:'Development',ucName:'Assist Write Code Build Locally',ucProcess:'10.1 Development',stage:'Build',phase:'Pilot',progress:40,launch:'9/30/2026',owner:'Saravuth Ruangsutham',ability:'Code Generation',role:'Frontend Engineer'},
+    {name:'Daily Summary & Progress Report',type:'agent',team:'PQA',ucName:'Daily Summary & Progress Report',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'8/31/2026',owner:'Pailin Kurasirikul, Prathana Nithasanacharukul',ability:'Documentation',role:'Test management'},
+    {name:'Knowledge Base Agent',type:'agent',team:'PQA',ucName:'Knowledge Base Agent (Test Management)',ucProcess:'11.2 Test Case Development',stage:'Test',phase:'Design',progress:50,launch:'8/31/2026',owner:'Pailin Kurasirikul, Prathana Nithasanacharukul',ability:'Testing & QA',role:'Tester'},
+    {name:'Change Impact & Re-work Minimization',type:'agent',team:'PQA',ucName:'Test Execution Optimizer',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:10,launch:'8/31/2026',owner:'Nutchanad Satiarujikanon, Prathana Nithasanacharukul',ability:'Testing & QA',role:'UAT Test'},
+    {name:'Update execution results and evidence',type:'agent',team:'PQA',ucName:'Test Execution Optimizer',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'8/31/2026',owner:'Thitiworrakarn Kittithanawan, Somjate Tantod',ability:'Testing & QA',role:'UAT'},
+    {name:'Test Artifact Synchronization',type:'agent',team:'PQA',ucName:'Test Artifact Synchronization',ucProcess:'13.2 UAT - Test Execution',stage:'Test',phase:'Design',progress:0,launch:'8/31/2026',owner:'Thanakrit Kitpiboon, Kritsanaluk Piriyacherdchoochai',ability:'Testing & QA',role:'UAT'},
+    {name:'Detailed Project Tasks Retriever (From JIRA)',type:'agent',team:'Delivery Manager',ucName:'Detailed Project Timeline Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Dev',progress:70,launch:'6/12/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'Detailed Project Timeline Generator (by Standard Excel Template)',type:'agent',team:'Delivery Manager',ucName:'Detailed Project Timeline Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'6/30/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'Project Stakeholder Directory Assistant',type:'agent',team:'Delivery Manager',ucName:'Project Stakeholder Directory Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'7/31/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'Timeline Change Detector and Risk Validation',type:'agent',team:'Delivery Manager',ucName:'Timeline Change Detector and Risk Validation',ucProcess:'6.2 Project Governance & Development Support',stage:'Design',phase:'Idea',progress:0,launch:'8/31/2026',owner:'Namphon Faksuwan et al',ability:'Project Management',role:'Delivery Manager'},
+    {name:'PC Document Control Assistant',type:'agent',team:'Delivery Manager',ucName:'PC Document Control Assistant',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'9/30/2026',owner:'Namphon Faksuwan et al',ability:'Documentation',role:'Delivery Manager'},
+    {name:'JO Deck Generator',type:'agent',team:'Delivery Manager',ucName:'JO Deck Generator',ucProcess:'6.1 Ideation & Planning',stage:'Design',phase:'Idea',progress:0,launch:'9/30/2026',owner:'Namphon Faksuwan et al',ability:'Documentation',role:'Delivery Manager'},
+    {name:'Requirement Refiner Assistant',type:'agent',team:'BA',ucName:'Open Issue Tracker',ucProcess:'2.1 Requirement Gathering',stage:'Discovery',phase:'Idea',progress:10,launch:'6/30/2026',owner:'Wimolrat Chotipaisarngul',ability:'Analytical',role:'BA'},
+    {name:'Open Issue Tracker',type:'agent',team:'BA',stage:'Discovery',progress:0,launch:'7/31/2026',owner:'Wimolrat Chotipaisarngul',role:'BA'},
+    {name:'Code Review Assistant',type:'agent',team:'Develop',ucName:'Assisted Code Review',ucProcess:'10.3 Code Review',stage:'Build',phase:'Pilot',progress:90,launch:'6/26/2026',owner:'Navanit Akra Sisuk',ability:'Decision Making',role:'Developer'},
+    {name:'Unit Test Generator',type:'skill',team:'Develop',ucName:'Assist Write Code Build Locally',ucProcess:'10.2 Unit Test',stage:'Build',phase:'Pilot',progress:90,launch:'6/26/2026',owner:'Navanit Akra Sisuk',ability:'Utility',role:'Developer'},
+    {name:'RCA Fix Assistant',type:'agent',team:'Develop',ucName:'Root Cause Analysis and Fix Suggestion for Defects',ucProcess:'10.4 Test Support',stage:'Build',phase:'Testing',progress:70,launch:'6/26/2026',owner:'Navanit Akra Sisuk',ability:'Decision Making',role:'Developer'},
+    {name:'API Detailed Designer',type:'skill',team:'Develop',ucName:'API Detailed Designer',ucProcess:'9.1 Detailed Design',stage:'Design',phase:'Pilot',progress:90,launch:'7/10/2026',owner:'Navanit Akra Sisuk',ability:'Documentation',role:'Dev Lead'},
+    {name:'System Impact Analyzer',type:'agent',team:'Develop',ucName:'System Design Gap & Impacts Analyzer',ucProcess:'4.1 High-Level Design',stage:'Design',phase:'Pilot',progress:90,launch:'8/14/2026',owner:'Navanit Akra Sisuk',ability:'Decision Making',role:'Dev Lead'},
+  ];
+}
+
+// ── HELPERS ──
+const isSdlcAg=a=>!!(a.stage&&a.stage.trim()); // non-empty SDLC Stage = is SDLC agent
+// SDLC Process Mapping can be multi-value (comma-separated), e.g. "10.1 Development,10.3 Code Review".
+// Most values have a numeric prefix like "10.1 Development" -> id "10.1". Some special processes
+// (no SDLC number, e.g. "NFR Gathering", "Incident Management") have no numeric prefix at all —
+// for those the FULL trimmed string is the id.
+function agentProcessIds(a){
+  if(!a.ucProcess) return [];
+  return a.ucProcess.split(',').map(p=>{
+    const t=p.trim();
+    const m=t.match(/^(\d+\.\d+[A-Za-z]?)\b/);
+    return m?m[1]:t; // numeric prefix if present, else the whole string is the id
+  }).filter(Boolean);
+}
+function hasProcessId(a,procId){
+  return agentProcessIds(a).includes(procId);
+}
+function getAgs(uc){return visAgents().filter(a=>{
+  if(!isSdlcAg(a)) return false; // only SDLC agents shown on UC cards
+  if(!a.ucName) return false;
+  if(a.ucName.trim().toLowerCase()!==uc.name.trim().toLowerCase()) return false;
+  if(!a.ucProcess||!uc.process) return true;
+  return hasProcessId(a,uc.process.trim().split(' ')[0]);
+});}
+const isOrph=a=>isSdlcAg(a)&&(!a.ucName||!a.ucName.trim()); // SDLC agent with no UC mapping
+// ── MATCHING AGENT/SKILL RELATIONSHIPS ──
+// Matching Agent (col H) can be multi-value (comma-separated) and points to other Agent Name(s)
+function matchingAgentNames(a){
+  if(!a.matchingAgent) return [];
+  return a.matchingAgent.split(',').map(s=>s.trim()).filter(Boolean);
+}
+// For an Agent: find all skills that list this agent's name in their Matching Agent
+function skillsOfAgent(a){
+  return AGENTS.filter(s=>s.type==='skill'&&matchingAgentNames(s).includes(a.name)).map(s=>s.name);
+}
+// For a Skill: the agent name(s) it is part of
+function agentsOfSkill(a){
+  return matchingAgentNames(a);
+}
+// ── UNIFIED STATUS (shared by Agent Library + AI Adoption) ──
+// Reads the explicit "Status" column (data source col Z) as source of truth.
+// Falls back to phase/progress-derived status only if Status is blank/unrecognized.
+function agentStatus(a){
+  const raw=(a.status||'').toLowerCase().trim();
+  if(raw==='not start'||raw==='notstart') return 'ns';
+  if(raw==='to do'||raw==='todo') return 'td';
+  if(raw==='in progress'||raw==='inprogress') return 'ip';
+  if(raw==='pilot') return 'pilot';
+  if(raw==='ready to use'||raw==='readytouse') return 'ru';
+  // Fallback (no/unrecognized Status value): derive from phase + progress
+  const ph=(a.phase||'').toLowerCase();
+  const p=typeof a.progress==='number'?a.progress:0;
+  if(ph==='production'&&p>=100) return 'ru';
+  if(ph==='pilot'&&p>80) return 'pilot';
+  if(p>0) return 'ip';
+  return 'ns';
+}
+const ST_DEF={
+  ns:{lb:'Not Start',color:'#6b7280',bg:'#f9fafb',bd:'#e5e7eb',dot:'#9ca3af'},
+  td:{lb:'To Do',color:'#3d5a8e',bg:'#edf2f9',bd:'#b0c4de',dot:'#4a6fa5'},
+  ip:{lb:'In Progress',color:'#92400e',bg:'#fffbeb',bd:'#fde68a',dot:'#f5a623'},
+  pilot:{lb:'Pilot',color:'#5a6b1c',bg:'#f4f6e5',bd:'#c5d06a',dot:'#8ea82a'},
+  ru:{lb:'Ready to Use',color:'#15803d',bg:'#f0fdf4',bd:'#bbf7d0',dot:'#15803d'},
+};
+const ST_ORDER=['ns','td','ip','pilot','ru'];
+const pc=p=>p>=70?'pfh':p>=30?'pfm':'pfl';
+function phc(ph){if(!ph)return 'phi';const p=ph.toLowerCase();return p.includes('testing')?'pht':p.includes('build')?'phb':p.includes('pilot')?'php':p.includes('design')?'phd':p.includes('launch')||p.includes('live')?'phl':'phi';}
+function fmtD(d){if(!d)return '';try{const dt=new Date(d);return isNaN(dt)?d:dt.toLocaleDateString('en-GB',{year:'2-digit',month:'short',day:'numeric'});}catch(e){return d;}}
+function parseDate(s){if(!s)return null;try{const d=new Date(s);return isNaN(d)?null:d;}catch(e){return null;}}
+function esc(s){return(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function uniq(a){return[...new Set(a.filter(Boolean))];}
+const tOk=a=>{
+  if(vType!=='all'&&a.type!==vType) return false;
+  if(vAbility.size>0&&!vAbility.has(a.ability||'')) return false;
+  if(vTeam.size>0&&!vTeam.has(a.team||'')) return false;
+  if(vRole.size>0){const roles=(a.role||'').split(/[,\/]/).map(r=>r.trim());if(!roles.some(r=>vRole.has(r))) return false;}
+  if(vSearch){const q=vSearch.toLowerCase();return (a.name||'').toLowerCase().includes(q)||(a.team||'').toLowerCase().includes(q);}
+  return true;
+};
+const sOk=u=>vStage==='all'||u.stage===vStage;
+function pct(n,t){return t?Math.round(n/t*100):0;}
+
+// ── STATS ──
+function updateStats(){
+  // Counter cards reflect the current filter set (search + lib filters)
+  const pool=AGENTS.filter(a=>tOk(a));
+  // Use cases = UCs whose agent/skill set includes at least one item matching current filters
+  const ucCovered=UCS.filter(u=>getAgs(u).some(a=>tOk(a)));
+  document.getElementById('s-uc').textContent=ucCovered.length;
+  document.getElementById('s-ag').textContent=pool.filter(a=>a.type==='agent').length;
+  document.getElementById('s-sk').textContent=pool.filter(a=>a.type==='skill').length;
+}
+
+// ── TAB ──
+function switchTab(t){
+  curPage=t;
+  ['lib','adopt','tl'].forEach(id=>{
+    const p=document.getElementById('page-'+id);
+    const b=document.getElementById('tab-'+id);
+    if(p) p.classList.toggle('on',id===t);
+    if(b) b.classList.toggle('on',id===t);
+  });
+  if(t==='tl') renderTL();
+  if(t==='adopt') renderAdopt();
+}
+
+// ── MULTI-SELECT HELPER ──
+function msLabel(set,placeholder){
+  if(set.size===0) return placeholder;
+  if(set.size===1) return [...set][0];
+  return `${[...set][0]} +${set.size-1}`;
+}
+function msHtml(id,opts,set,label){
+  const btn=`<button class="ms-btn ${set.size>0?'has-sel':''}" onclick="msToggle('${id}')" id="ms-btn-${id}">${msLabel(set,label)}</button>`;
+  const items=opts.map(v=>{
+    const checked=set.has(v);
+    return `<label class="ms-item ${checked?'checked':''}"><input type="checkbox" ${checked?'checked':''} onchange="msChange('${id}','${esc(v)}',this.checked)">${esc(v)}</label>`;
+  }).join('');
+  return `<div class="ms-wrap" id="ms-wrap-${id}"><div class="ms-list" id="ms-list-${id}">${items}</div>${btn}</div>`;
+}
+function msToggle(id){
+  // Close all other open dropdowns first
+  document.querySelectorAll('.ms-list.open').forEach(el=>{if(el.id!=='ms-list-'+id)el.classList.remove('open');});
+  document.getElementById('ms-list-'+id).classList.toggle('open');
+}
+function msChange(id,val,checked){
+  const map={ability:vAbility,team:vTeam,role:vRole,teamA:vTeam,roleA:vRole};
+  const set=map[id];
+  if(checked) set.add(val); else set.delete(val);
+  // Update button label + styling without full rebuild
+  const btn=document.getElementById('ms-btn-'+id);
+  if(btn){
+    const labels={ability:'Ability',team:'Team',role:'Role',teamA:'Team',roleA:'Role'};
+    btn.textContent=msLabel(set,labels[id]);
+    btn.className='ms-btn'+(set.size>0?' has-sel':'');
+  }
+  // Re-render items checked state
+  document.querySelectorAll(`#ms-list-${id} .ms-item`).forEach(el=>{
+    const cb=el.querySelector('input');
+    if(cb){el.classList.toggle('checked',cb.checked);}
+  });
+  // Since team/role are shared filters across pages, rebuild whichever page-specific control bar
+  // wasn't the one just edited, so both stay in sync (e.g. editing Team on Adoption also updates Library's dropdown state next render).
+  renderAll();
+}
+// Close dropdown on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.ms-wrap'))
+    document.querySelectorAll('.ms-list.open').forEach(el=>el.classList.remove('open'));
+});
+
+// ── SHARED STATUS LEGEND + COUNTERS ──
+// Counts agents/skills by unified status, scoped to the current filter set.
+function statusCounts(pool){
+  const c={ns:0,td:0,ip:0,pilot:0,ru:0};
+  pool.forEach(a=>{const s=agentStatus(a);c[s]=(c[s]||0)+1;});
+  return c;
+}
+// Render the shared status legend with live counts into a target element id
+function renderStatusLegend(elId,pool){
+  const el=document.getElementById(elId);if(!el) return;
+  const c=statusCounts(pool);
+  el.innerHTML=ST_ORDER.map(s=>{
+    const d=ST_DEF[s];
+    return `<div class="lg" style="gap:6px"><span style="width:11px;height:11px;border-radius:50%;background:${d.dot};display:inline-block"></span><span style="color:${d.color};font-weight:600">${d.lb}</span><span style="font-weight:700;color:${d.color}">${c[s]}</span></div>`;
+  }).join('<div class="lsep"></div>');
+}
+
+// ── LIBRARY CONTROLS (no SDLC; By Team/Role/Ability + filters) ──
+function buildCtrl(){
+  const agViews=[['by-team','By Team'],['by-role','By Role'],['by-ability','By Ability']];
+  if(!agViews.find(v=>v[0]===vView)) vView='by-team';
+  const dd=(id,opts,val,onch,lbl)=>`<div class="cg"><span class="cl">${lbl}</span><select class="dd" id="${id}" onchange="${onch}">${opts.map(o=>`<option value="${esc(Array.isArray(o)?o[0]:o)}" ${val===(Array.isArray(o)?o[0]:o)?'selected':''}>${Array.isArray(o)?o[1]:(o==='all'?'All':o)}</option>`).join('')}</select></div>`;
+  const abilityOpts=uniq(AGENTS.map(a=>a.ability).filter(Boolean)).sort();
+  const teamOpts=uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort();
+  const roleOpts=uniq(AGENTS.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort();
+
+  // Order: View, Team, Role, Ability, Type
+  let h=dd('ddv',agViews,vView,"setView(this.value)",'VIEW');
+  h+='<div class="csep"></div><div class="cg"><span class="cl">TEAM</span>'+msHtml('team',teamOpts,vTeam,'Team')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">ROLE</span>'+msHtml('role',roleOpts,vRole,'Role')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">ABILITY</span>'+msHtml('ability',abilityOpts,vAbility,'Ability')+'</div>';
+  h+='<div class="csep"></div>'+dd('ddt',[['all','All types'],['agent','Agent'],['skill','Skill']],vType,"vType=this.value;renderAll()",'TYPE');
+  h+='<button class="btnclr" title="Clear filters" onclick="clearF()">✕</button>';
+  document.getElementById('cbar').innerHTML=h;
+}
+
+// ── AI ADOPTION CONTROLS (SDLC toggle, View by-stage/by-process, Stage, Has agent) ──
+function buildCtrlAdopt(){
+  const dd=(id,opts,val,onch,lbl)=>`<div class="cg"><span class="cl">${lbl}</span><select class="dd" id="${id}" onchange="${onch}">${opts.map(o=>`<option value="${esc(Array.isArray(o)?o[0]:o)}" ${val===(Array.isArray(o)?o[0]:o)?'selected':''}>${Array.isArray(o)?o[1]:(o==='all'?'All':o)}</option>`).join('')}</select></div>`;
+  const stages=['all',...SO];
+  const teamOpts=uniq(AGENTS.map(a=>a.team).filter(Boolean)).sort();
+  const roleOpts=uniq(AGENTS.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort();
+
+  let h=`<button class="pill ${vSDLC?'on':''}" onclick="toggleSDLC()">Use Cases</button>`;
+  if(vSDLC){
+    // View dropdown only when Use Cases ON
+    h+='<div class="csep"></div>'+dd('ddav',[['by-stage','By Stage'],['by-process','By Process']],vAdoptView,"setAdoptView(this.value)",'VIEW');
+    // Stage dropdown only when View = By Stage
+    if(vAdoptView==='by-stage'){
+      h+='<div class="csep"></div>'+dd('dds',stages,vStage,"vStage=this.value;renderAdopt()",'STAGE');
+    }
+  }
+  h+='<div class="csep"></div><div class="cg"><span class="cl">TEAM</span>'+msHtml('teamA',teamOpts,vTeam,'Team')+'</div>';
+  h+='<div class="csep"></div><div class="cg"><span class="cl">ROLE</span>'+msHtml('roleA',roleOpts,vRole,'Role')+'</div>';
+  // Has agent button (always available on adopt page)
+  h+='<div class="csep"></div>'+`<button class="pill ${vHasAgent?'on':''}" onclick="vHasAgent=!vHasAgent;renderAdopt()">Has agent</button>`;
+  h+='<button class="btnclr" title="Clear filters" onclick="clearF()">✕</button>';
+  document.getElementById('cbar-adopt').innerHTML=h;
+}
+function toggleSDLC(){
+  vSDLC=!vSDLC;
+  if(vSDLC){vAdoptView='by-stage';}
+  else{vStage='all';}
+  renderAdopt();
+}
+function setView(v){vView=v;renderAll();}
+function setAdoptView(v){
+  vAdoptView=v;
+  if(v!=='by-stage') vStage='all';
+  renderAdopt();
+}
+function clearF(){vSDLC=false;vHasAgent=false;vView='by-team';vAdoptView='by-stage';vStage='all';vType='all';vAbility=new Set();vTeam=new Set();vRole=new Set();vSearch='';const s=document.getElementById('navSearch');if(s)s.value='';const c=document.getElementById('navSearchClear');if(c)c.style.display='none';renderAll();}
+function renderAll(){
+  buildCtrl();updateStats();renderLib();renderStatusLegend('lib-legend',AGENTS.filter(a=>tOk(a)));
+  if(curPage==='adopt') renderAdopt();
+  if(curPage==='tl'){drawTL();drawMsCards();drawOutCard();}
+  const clrBtn=document.getElementById('navSearchClear');
+  if(clrBtn) clrBtn.style.display=vSearch?'block':'none';
+}
+
+// ── LIBRARY RENDER (always agent/skill grouped — no SDLC mode here) ──
+function renderLib(){
+  const el=document.getElementById('main-lib');
+  let ags=AGENTS.filter(a=>tOk(a));
+  const key=vView==='by-role'?'role':vView==='by-ability'?'ability':'team';
+  const clr={team:'#1558b0',ability:'#6d28d9',role:'#0b7a68'};
+  // Role can be multi-value: expand groups by individual role
+  let groups,groupAgs;
+  if(key==='role'){
+    groups=uniq(ags.flatMap(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).filter(Boolean))).sort();
+    groupAgs=g=>ags.filter(a=>(a.role||'').split(/[,\/]/).map(r=>r.trim()).includes(g));
+  }else{
+    groups=uniq(ags.map(a=>a[key]||'').filter(Boolean));
+    groupAgs=g=>ags.filter(a=>(a[key]||'')===g);
+  }
+  let html=groups.map(g=>{
+    const gAgs=groupAgs(g);
+    if(!gAgs.length) return '';
+    return `<div class="sb"><div class="sh"><div class="sbar" style="background:${clr[key]}"></div><span class="sname" style="color:${clr[key]}">${g}</span><span class="sbadge">${gAgs.length}</span></div><div class="agrid">${gAgs.map(a=>renderAC(a)).join('')}</div></div>`;
+  }).join('');
+  const unassigned=ags.filter(a=>!(a[key]||''));
+  if(unassigned.length) html+=`<div class="sb"><div class="sh"><div class="sbar" style="background:#9ca3af"></div><span class="sname" style="color:#9ca3af">(unassigned)</span><span class="sbadge">${unassigned.length}</span></div><div class="agrid">${unassigned.map(a=>renderAC(a)).join('')}</div></div>`;
+  el.innerHTML=html||'<div style="text-align:center;padding:50px;color:var(--mu)">No data matching filters</div>';
+}
+
+function renderByDim(dim){
+  if(!UCS.length) return '<div style="text-align:center;padding:30px;color:var(--mu)">No use case data — loading…</div>';
+  let groups;
+  if(dim==='stage') groups=SO.filter(s=>(vStage==='all'||s===vStage)&&UCS.some(u=>u.stage===s)).map(s=>({key:s,label:s,color:sc(s)}));
+  else groups=uniq(UCS.filter(u=>sOk(u)).map(u=>u.process)).map(p=>({key:p,label:p,color:sc(UCS.find(u=>u.process===p)?.stage||'')}));
+  return groups.map(g=>{
+    let ucs=UCS.filter(u=>(dim==='stage'?u.stage===g.key:u.process===g.key)&&sOk(u));
+    const all=ucs.length,cov=ucs.filter(u=>getAgs(u).length>0).length;
+    if(vHasAgent) ucs=ucs.filter(u=>getAgs(u).length>0); // only filter when Has agent ON
+    const cards=ucs.map(u=>renderCard(u)).join('');
+    // Orphan agents: SDLC agents that match the current filters (Team/Role/Ability/search/type) and
+    // belong to this stage, but have no usecase mapping at all — they can never appear inside a UC
+    // card above, so without this they'd silently vanish even though they match the active filters
+    // (and are still counted in the top-bar counters / status legend).
+    const orphPool=dim==='stage'?AGENTS.filter(a=>isOrph(a)&&tOk(a)&&a.stage===g.key):[];
+    const orphCards=orphPool.length?`<div class="orph-row"><div class="orph-lbl">Not linked to a use case (${orphPool.length})</div><div class="agrid">${orphPool.map(a=>renderAC(a,true)).join('')}</div></div>`:'';
+    if(!cards.trim()&&!orphCards.trim()) return '';
+    return `<div class="sb"><div class="sh"><div class="sbar" style="background:${g.color}"></div><span class="sname" style="color:${g.color}">${g.label}</span><span class="sbadge">${all} UC</span><span class="scov">Covered: <strong style="color:${g.color}">${cov}/${all}</strong> (${pct(cov,all)}%)</span></div><div class="grid">${cards}</div>${orphCards}</div>`;
+  }).join('');
+}
+
+function renderCard(uc){
+  let ags=getAgs(uc);
+  if(vType==='agent') ags=ags.filter(a=>a.type==='agent');
+  if(vType==='skill') ags=ags.filter(a=>a.type==='skill');
+  const cov=getAgs(uc).length>0;
+  const ps=`background:${sc(uc.stage)}15;color:${sc(uc.stage)};border:1px solid ${sc(uc.stage)}30`;
+  return `<div class="card ${cov?'cov':'emp'}" onclick="openM('${esc(uc.name)}','${esc(uc.process)}')">
+    <div class="cmeta"><span class="cid">${uc.process.split(' ')[0]}</span><span class="cproc" style="${ps}">${uc.process.replace(/^\S+\s/,'')}</span></div>
+    <div class="cname">${uc.name}</div>
+    <div class="alist">${ags.length>0?ags.map(a=>renderARow(a)).join(''):'<span class="ecap"><span class="edot"></span>No agent / skill yet</span>'}</div>
+  </div>`;
+}
+function renderARow(a){
+  let relCount=0,relLabel='';
+  if(a.type==='skill'){relCount=agentsOfSkill(a).length;relLabel=relCount===1?'1 Agent':`${relCount} Agents`;}
+  else{relCount=skillsOfAgent(a).length;relLabel=relCount===1?'1 Skill':`${relCount} Skills`;}
+  return `<div class="arow ${a.type==='agent'?'ag':'sk'}" onclick="event.stopPropagation();openAgentDetail('${esc(a.name)}',false)" style="cursor:pointer"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span>
+    <div class="abody"><div class="aname">${a.name}</div>
+    <div class="afoot">${a.team?`<span class="ttag">${a.team}</span>`:''}${relCount>0?`<span class="ttag" style="color:${a.type==='skill'?'var(--ag)':'var(--sk)'}">${relLabel}</span>`:''}${a.role?`<span class="ttag">${a.role}</span>`:''}</div>
+    <div class="prow"><div class="pbar"><div class="pfill ${pc(a.progress)}" style="width:${a.progress}%"></div></div><span class="ppct">${a.progress}%</span></div></div></div>`;
+}
+function renderAgGrp(key){
+  const clr={team:'#1558b0',ability:'#6d28d9',role:'#0b7a68'};
+  // In SDLC mode show only SDLC agents; in agent mode show all
+  const pool=vSDLC?AGENTS.filter(isSdlcAg):AGENTS;
+  return uniq(pool.map(a=>a[key]||'')).map(g=>{
+    let ags=pool.filter(a=>(a[key]||'')===g&&tOk(a)&&(vStage==='all'||a.stage===vStage));
+    if(!ags.length) return '';
+    return `<div class="sb"><div class="sh"><div class="sbar" style="background:${clr[key]||'#7a85a3'}"></div><span class="sname" style="color:${clr[key]||'#7a85a3'}">${g||'(unassigned)'}</span><span class="sbadge">${ags.length}</span></div><div class="agrid">${ags.map(a=>renderAC(a)).join('')}</div></div>`;
+  }).join('');
+}
+function renderAgOnly(){
+  let linked=AGENTS.filter(a=>!isOrph(a)&&tOk(a)&&(vStage==='all'||a.stage===vStage));
+  let orph=AGENTS.filter(a=>isOrph(a)&&tOk(a));
+  return `<div class="sb"><div class="sh"><div class="sbar" style="background:var(--ag)"></div><span class="sname">All agents &amp; skills</span><span class="sbadge">${linked.length} linked</span></div><div class="agrid">${linked.map(a=>renderAC(a)).join('')}</div></div>`+
+    (orph.length?`<div class="sb"><div class="sh" style="border-bottom-color:#fde68a"><div class="sbar" style="background:#d97706"></div><span class="sname" style="color:#d97706">Not linked (${orph.length})</span></div><div class="agrid">${orph.map(a=>renderAC(a,true)).join('')}</div></div>`:'');
+}
+function renderAC(a,orp=false){
+  const st=agentStatus(a);const sd=ST_DEF[st];
+  // Relationship: Skill → part of N agent(s); Agent → composed of N skill(s) — COUNT ONLY on preview card
+  let relCount=0,relLabel='';
+  if(a.type==='skill'){
+    relCount=agentsOfSkill(a).length;
+    relLabel=relCount===1?'1 Agent':`${relCount} Agents`;
+  }else{
+    relCount=skillsOfAgent(a).length;
+    relLabel=relCount===1?'1 Skill':`${relCount} Skills`;
+  }
+  const relHtml=relCount>0?`<div class="acrow"><span class="ack">${a.type==='skill'?'Agent':'Skill'}</span><span style="color:${a.type==='skill'?'var(--ag)':'var(--sk)'};font-size:11px;font-weight:600">${relLabel}</span></div>`:'';
+  return `<div class="ac ${a.type==='agent'?'isag':'issk'} ${orp?'orp':''}" onclick="openAgentDetail('${esc(a.name)}')" style="cursor:pointer"><div class="achdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type==='agent'?'AGENT':'SKILL'}</span><span class="acname">${a.name}</span></div>
+    <div class="acrows">
+      ${a.ucName?`<div class="acrow"><span class="ack">Usecase</span><span style="color:var(--tx2);font-size:11px">${a.ucName}</span></div>`:''}
+      ${a.team?`<div class="acrow"><span class="ack">Team</span><span class="ttag">${a.team}</span></div>`:''}
+      ${a.owner?`<div class="acrow"><span class="ack">Owner</span><span>${a.owner}</span></div>`:''}
+      ${a.ability?`<div class="acrow"><span class="ack">Ability</span><span>${a.ability}</span></div>`:''}
+      ${relHtml}
+      ${a.role?`<div class="acrow"><span class="ack">Role</span><span>${a.role}</span></div>`:''}
+      <div class="acrow"><span class="ack">Phase</span><span class="ph" style="background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
+      ${a.launch?`<div class="acrow"><span class="ack">Launch</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px">${fmtD(a.launch)}</span></div>`:''}
+    </div>
+    <div class="prow" style="margin-top:7px"><div class="pbar"><div class="pfill ${pc(a.progress)}" style="width:${a.progress}%"></div></div><span class="ppct">${a.progress}%</span></div></div>`;
+}
+
+// ── MODAL ──
+function openM(ucName,ucProcess){
+  const uc=UCS.find(u=>u.name===ucName&&u.process===ucProcess)||{name:ucName,process:ucProcess,stage:''};
+  const ags=getAgs(uc);const col=sc(uc.stage||'');
+  const agh=ags.length>0?ags.map(a=>{
+    const ph=phc(a.phase);
+    return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
+      <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
+      <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
+      <div class="mrow"><span class="mk">Phase</span><span class="ph ${ph}">${a.phase||'—'}</span></div>
+      <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
+      <div class="mrow"><span class="mk">Launch</span><span style="font-family:'IBM Plex Mono',monospace">${fmtD(a.launch)||'—'}</span></div>
+      ${a.phase?`<div class="mpbw"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu)"><span>Progress</span><strong style="font-family:'IBM Plex Mono',monospace">${a.progress}%</strong></div><div class="mpb"><div class="mpf ${pc(a.progress)}" style="width:${a.progress}%"></div></div></div>`:''}</div>`;
+  }).join(''):`<span class="ecap"><span class="edot"></span>No agent or skill for this usecase</span>`;
+  document.getElementById('mbody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+      <span style="font-size:10.5px;color:var(--mu)">${uc.process||ucProcess}</span>
+      ${uc.stage?`<span style="font-size:10.5px;padding:2px 9px;border-radius:3px;background:${col}15;color:${col};border:1px solid ${col}30;font-weight:600">${uc.stage}</span>`:''}
+    </div>
+    <div class="mtitle">${ucName}</div>
+    <div class="msec">Agents &amp; Skills (${ags.length})</div>${agh}`;
+  document.getElementById('modal').classList.add('open');
+}
+function closeMBg(e){if(e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');}
+
+// ── TIMELINE ──
+const TL_MS=[
+  {id:'M1',color:'#0b7a68',start:new Date('2026-05-18'),end:new Date('2026-06-12')},
+  {id:'M2',color:'#1558b0',start:new Date('2026-06-01'),end:new Date('2026-06-26')},
+  {id:'M3',color:'#6d28d9',start:new Date('2026-06-15'),end:new Date('2026-07-10')},
+  {id:'M4',color:'#c2590a',start:new Date('2026-06-29'),end:new Date('2026-07-24')},
+];
+const TL_S=new Date('2026-05-01'),TL_E=new Date('2026-09-30'),TL_D=(TL_E-TL_S)/864e5;
+const TODAY=new Date(); TODAY.setHours(0,0,0,0);
+const TL_LW=200,TL_RH=76,TL_HH=36,TL_AH=52,TL_IR=12,TL_PAD=16;
+let tlFilter=null,tlClicks=[],tlMsClicks=[];
+
+const TL_ST={
+  done:   {bg:'#dcfce7',bd:'#16a34a',tx:'#14532d',ic:'✓',lb:'Done (Production)'},
+  pilot:  {bg:'#f4f6e5',bd:'#8ea82a',tx:'#5a6b1c',ic:'◆',lb:'Pilot'},
+  ontime: {bg:'#dbeafe',bd:'#2563eb',tx:'#1e3a8a',ic:'●',lb:'On track'},
+  risk:   {bg:'#fef3c7',bd:'#d97706',tx:'#78350f',ic:'⚠',lb:'At risk'},
+  delay:  {bg:'#fee2e2',bd:'#dc2626',tx:'#7f1d1d',ic:'✕',lb:'Delayed'},
+  notstart:{bg:'#f3f4f6',bd:'#9ca3af',tx:'#4b5563',ic:'○',lb:'Not started'},
+};
+
+function tlStatus(a){
+  const d=parseDate(a.launch);
+  const p=typeof a.progress==='number'?a.progress:(parseInt((a.progress||'0').toString().replace('%',''))||0);
+  const ph=(a.phase||'').toLowerCase();
+  
+  // Done: Production phase AND 100% progress
+  if(ph==='production'&&p>=100) return 'done';
+  
+  // Pilot: Pilot phase (even if not 100%)
+  if(ph==='pilot') return 'pilot';
+  
+  // If no launch date, only mark as not started if progress is 0
+  if(!d) return p>0?'ontime':'notstart';
+  
+  // Launch date is in the FUTURE → forecast, but never show Delayed
+  if(d>TODAY){
+    if(p===0) return 'notstart';
+    
+    // Forecast: are we on track to finish by launch?
+    const tot=(d-TL_S)/864e5;                              // total days: start → launch
+    const el=(TODAY-TL_S)/864e5;                           // elapsed days: start → today
+    const exp=tot>0?Math.min(100,el/tot*100):100;          // expected % done by now
+    const gap=exp-p;  // positive = behind schedule
+    
+    if(gap<=20)  return 'ontime';   // on track
+    return       'risk';            // behind schedule, but time to catch up (yellow, not red)
+  }
+  
+  // Launch date has PASSED → now evaluate actual performance
+  if(p>=100) return 'done';  // finished (on time or eventually)
+  if(p===0) return 'notstart';  // nothing started even after deadline
+  return 'delay';  // ONLY HERE: started but didn't finish by deadline (RED)
+}
+
+function tlX(d,tw){return TL_LW+Math.max(0,Math.min(1,(d-TL_S)/864e5/TL_D))*tw;}
+
+function rrect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function renderTL(){
+  // legend
+  document.getElementById('tl-legend').innerHTML=
+    `<span style="font-size:10px;font-weight:700;color:var(--mu);letter-spacing:.05em">STATUS:</span>`+
+    Object.entries(TL_ST).map(([k,v])=>`<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--tx2)"><div style="width:16px;height:16px;border-radius:50%;background:${v.bg};border:2px solid ${v.bd};display:flex;align-items:center;justify-content:center;font-size:9px;color:${v.tx};font-weight:700">${v.ic}</div>${v.lb}</div>`).join('')+
+    `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:#ef4444"><div style="width:2px;height:16px;background:#ef4444;border-radius:1px"></div>Today</div>`;
+  drawTL();
+  drawMsCards();
+  drawOutCard();
+}
+
+function drawTL(){
+  const cv=document.getElementById('tl-canvas');if(!cv) return;
+  const teams=uniq(visAgents().map(a=>a.team).filter(Boolean));
+  const actMs=tlFilter&&tlFilter!=='out'?TL_MS.find(m=>m.id===tlFilter):null;
+  const vis=(tlFilter==='out')
+    ? teams.filter(t=>visAgents().some(a=>{if(a.team!==t) return false;const d=parseDate(a.launch);return !d||!TL_MS.some(m=>d>=m.start&&d<=m.end);}))
+    : actMs?teams.filter(t=>visAgents().some(a=>a.team===t&&(()=>{const d=parseDate(a.launch);return d&&d>=actMs.start&&d<=actMs.end;})())):teams;
+  const wrap=cv.parentElement;
+  const W=Math.max(wrap.clientWidth||860,700),tw=W-TL_LW-TL_PAD;
+  const H=TL_HH+TL_AH+vis.length*TL_RH;
+  const DPR=window.devicePixelRatio||1;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(DPR,0,0,DPR,0,0); // scale drawing ops to match backing-store resolution
+  ctx.clearRect(0,0,W,H);
+  const dx=d=>tlX(d,tw),tx=dx(TODAY);
+
+  // month header
+  const MONTHS=[{l:'MAY',s:new Date('2026-05-01'),e:new Date('2026-05-31')},{l:'JUN',s:new Date('2026-06-01'),e:new Date('2026-06-30')},{l:'JUL',s:new Date('2026-07-01'),e:new Date('2026-07-31')},{l:'AUG',s:new Date('2026-08-01'),e:new Date('2026-08-31')},{l:'SEP',s:new Date('2026-09-01'),e:new Date('2026-09-30')}];
+  ctx.fillStyle='#f8f9fc';ctx.fillRect(0,0,W,TL_HH);
+  ctx.fillStyle='#eef0f6';ctx.fillRect(0,0,TL_LW,TL_HH);
+  ctx.fillStyle='#7a85a3';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Team',14,TL_HH/2);
+  MONTHS.forEach(m=>{
+    const x1=Math.max(dx(m.s),TL_LW),x2=Math.min(dx(new Date(m.e.getTime()+864e5)),TL_LW+tw);
+    if(x2<=x1) return;
+    ctx.strokeStyle='#dde1ec';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x1,0);ctx.lineTo(x1,TL_HH);ctx.stroke();
+    ctx.fillStyle='#3d4a6b';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(m.l,(x1+x2)/2,TL_HH/2);
+  });
+  ctx.strokeStyle='#c8cde0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,TL_HH);ctx.lineTo(W,TL_HH);ctx.stroke();
+
+  // milestone axis
+  const ay=TL_HH;
+  ctx.fillStyle='#f2f4f8';ctx.fillRect(0,ay,W,TL_AH);
+  ctx.fillStyle='#eef0f6';ctx.fillRect(0,ay,TL_LW,TL_AH);
+  ctx.fillStyle='#7a85a3';ctx.font='10px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Milestones',14,ay+TL_AH/2);
+  tlMsClicks=[];
+  TL_MS.forEach(m=>{
+    const x1=dx(m.start),x2=dx(m.end),w=x2-x1,sel=tlFilter===m.id;
+    ctx.fillStyle=sel?m.color+'55':m.color+'30';rrect(ctx,x1,ay+7,w,TL_AH-14,5);ctx.fill();
+    ctx.strokeStyle=sel?m.color:m.color+'90';ctx.lineWidth=sel?2.5:1.5;rrect(ctx,x1,ay+7,w,TL_AH-14,5);ctx.stroke();
+    ctx.fillStyle=m.color;ctx.font=`bold ${sel?13:11.5}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(m.id,x1+w/2,ay+TL_AH/2-7);
+    const sL=m.start.toLocaleDateString('en-GB',{day:'numeric',month:'short'}),eL=m.end.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    ctx.font='8.5px sans-serif';ctx.fillStyle=m.color+'cc';ctx.fillText(`${sL}–${eL}`,x1+w/2,ay+TL_AH/2+8);
+    ctx.strokeStyle=m.color+'70';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x1,ay);ctx.lineTo(x1,ay+TL_AH);ctx.stroke();
+    tlMsClicks.push({x1,y1:ay,x2,y2:ay+TL_AH,id:m.id});
+  });
+  // today label on axis
+  ctx.fillStyle='#ef4444';rrect(ctx,tx+2,ay+2,36,16,3);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='bold 8px sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('Today',tx+5,ay+10);
+  ctx.strokeStyle='#dde1ec';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,ay+TL_AH);ctx.lineTo(W,ay+TL_AH);ctx.stroke();
+
+  // team rows
+  tlClicks=[];
+  vis.forEach((team,ti)=>{
+    const tAgs=visAgents().filter(a=>a.team===team);
+    const ry=TL_HH+TL_AH+ti*TL_RH,my=ry+TL_RH/2-8;
+    ctx.fillStyle=ti%2===0?'#fff':'#fafbfd';ctx.fillRect(0,ry,W,TL_RH);
+    ctx.fillStyle='#f4f6f8';ctx.fillRect(0,ry,TL_LW,TL_RH);
+    ctx.strokeStyle='#dde1ec';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,ry+TL_RH);ctx.lineTo(W,ry+TL_RH);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(TL_LW,ry);ctx.lineTo(TL_LW,ry+TL_RH);ctx.stroke();
+    ctx.fillStyle='#1a2236';ctx.font='bold 12.5px sans-serif';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(team,14,ry+10);
+    const rN=tAgs.filter(a=>{const p=parseInt((a.progress||'0').toString().replace('%',''))||0;return p>=70;}).length;
+    ctx.fillStyle='#7a85a3';ctx.font='10px sans-serif';ctx.fillText(`${tAgs.length} items · ${rN} ≥70%`,14,ry+27);
+    const outN=tAgs.filter(a=>{const d=parseDate(a.launch);return d&&!TL_MS.some(m=>d>=m.start&&d<=m.end);}).length;
+    if(outN){ctx.fillStyle='#c2590a';ctx.font='9.5px sans-serif';ctx.fillText(`⚠ ${outN} out of milestones`,14,ry+43);}
+    TL_MS.forEach(m=>{const isO=tlFilter&&tlFilter!==m.id;ctx.fillStyle=isO?m.color+'08':m.color+'12';ctx.fillRect(dx(m.start),ry,dx(m.end)-dx(m.start),TL_RH);});
+    ctx.save();ctx.strokeStyle='#ef444430';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(tx,ry);ctx.lineTo(tx,ry+TL_RH);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    const byDate={};
+    tAgs.forEach(a=>{const k=a.launch||'_';(byDate[k]=byDate[k]||[]).push(a);});
+    Object.entries(byDate).forEach(([ds,ags])=>{
+      const d=parseDate(ds);if(!d) return;
+      const inMs=TL_MS.find(m=>d>=m.start&&d<=m.end)||null;
+      const dim=(tlFilter==='out')?(!!inMs):(tlFilter&&(!inMs||inMs.id!==tlFilter));
+      const cx=dx(d);
+      if(dim){ctx.globalAlpha=0.15;ctx.beginPath();ctx.arc(cx,my,TL_IR,0,Math.PI*2);ctx.fillStyle='#9ca3af';ctx.fill();ctx.globalAlpha=1;return;}
+      const pr=['delay','risk','ontime','pilot','done','notstart'].find(s=>ags.map(a=>tlStatus(a)).includes(s))||'notstart';
+      const st=TL_ST[pr];const n=ags.length;
+      ctx.shadowColor='rgba(0,0,0,0.12)';ctx.shadowBlur=4;
+      ctx.beginPath();ctx.arc(cx,my,TL_IR,0,Math.PI*2);ctx.fillStyle=st.bg;ctx.fill();
+      ctx.shadowBlur=0;ctx.strokeStyle=st.bd;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,my,TL_IR,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle=st.tx;ctx.font=`bold ${n>1?11:10}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n>1?n:st.ic,cx,my);
+      const lb=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      ctx.font='600 8.5px sans-serif';ctx.textBaseline='top';ctx.fillText(lb,cx,my+TL_IR+3);
+      tlClicks.push({x1:cx-TL_IR-2,y1:ry,x2:cx+TL_IR+2,y2:ry+TL_RH,agents:ags,launch:ds,team});
+    });
+  });
+
+
+  // today full dashed line
+  ctx.save();ctx.strokeStyle='#ef4444aa';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(tx,TL_HH);ctx.lineTo(tx,H);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  ctx.strokeStyle='#c8cde0';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(TL_LW,TL_HH);ctx.lineTo(TL_LW,H);ctx.stroke();
+
+  cv.onclick=e=>{
+    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+    const mh=tlMsClicks.find(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2);
+    if(mh){tlFilter=tlFilter===mh.id?null:mh.id;drawTL();drawMsCards();drawOutCard();return;}
+    const ah=tlClicks.find(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2);
+    if(ah) openAgentsModal(ah.agents,ah.launch);
+  };
+  cv.onmousemove=e=>{
+    const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+    cv.style.cursor=(tlMsClicks.some(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2)||tlClicks.some(a=>mx>=a.x1&&mx<=a.x2&&my>=a.y1&&my<=a.y2))?'pointer':'default';
+  };
+}
+
+// ── AGENT/SKILL DETAIL MODAL (shared by Agent Library + AI Adoption + Timeline) ──
+function openAgentsModal(ags,launch,title,showUC=true){
+  const d=launch?parseDate(launch):null;
+  const lbl=d?d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):(launch||null);
+  const inMs=d?TL_MS.find(m=>d>=m.start&&d<=m.end):null;
+  const dateBadge=lbl?(inMs
+    ?`<span style="font-size:10.5px;padding:2px 9px;border-radius:3px;background:${inMs.color}15;color:${inMs.color};border:1px solid ${inMs.color}30;font-weight:600">${inMs.id}</span>`
+    :`<span style="font-size:10.5px;padding:2px 9px;border-radius:3px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:600">⚠ Out of milestone</span>`)
+    :'';
+  const agh=ags.map(a=>{
+    const st=agentStatus(a);const sd=ST_DEF[st];
+    let relRow='';
+    if(a.type==='skill'){const parts=agentsOfSkill(a);if(parts.length) relRow=`<div class="mrow"><span class="mk">Agent</span><span style="color:var(--ag);font-size:11px;font-weight:600">${parts.join(', ')}</span></div>`;}
+    else{const sks=skillsOfAgent(a);if(sks.length) relRow=`<div class="mrow"><span class="mk">Skill</span><span style="color:var(--sk);font-size:11px;font-weight:600">${sks.join(', ')}</span></div>`;}
+    const descRow=a.desc&&a.desc!=='TBC'?`<div class="mrow" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="mk">Description</span><span style="color:var(--tx2);font-size:11px;line-height:1.45">${a.desc.replace(/<br\s*\/?>/gi,' ')}</span></div>`:'';
+    const ucRow=showUC?`<div class="mrow"><span class="mk">Use case</span><span style="color:var(--tx2);font-size:11px">${a.ucName||'—'}</span></div>`:'';
+    return `<div class="mac"><div class="machdr"><span class="tb ${a.type==='agent'?'tbag':'tbsk'}">${a.type.toUpperCase()}</span><span class="macname">${a.name}</span></div>
+      ${descRow}
+      ${ucRow}
+      <div class="mrow"><span class="mk">Team</span><span>${a.team||'—'}</span></div>
+      <div class="mrow"><span class="mk">Owner</span><span>${a.owner||'—'}</span></div>
+      <div class="mrow"><span class="mk">Ability</span><span>${a.ability||'—'}</span></div>
+      ${relRow}
+      <div class="mrow"><span class="mk">Role</span><span>${a.role||'—'}</span></div>
+      <div class="mrow"><span class="mk">Process</span><span style="color:var(--mu);font-size:11px">${a.ucProcess||'—'}</span></div>
+      <div class="mrow"><span class="mk">Phase</span><span class="ph" style="background:${sd.bg};color:${sd.color};border:1px solid ${sd.bd}">${sd.lb}</span></div>
+      <div class="mrow"><span class="mk">Launch</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px">${a.launch?fmtD(a.launch):'—'}</span></div>
+      <div class="mpbw"><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--mu)"><span>Progress</span><strong style="font-family:'IBM Plex Mono',monospace">${a.progress}%</strong></div><div class="mpb"><div class="mpf ${pc(a.progress)}" style="width:${a.progress}%"></div></div></div></div>`;
+  }).join('');
+  document.getElementById('mbody').innerHTML=`
+    ${lbl?`<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap"><span style="font-size:10.5px;color:var(--mu)">Launch: ${lbl}</span>${dateBadge}</div>`:''}
+    <div class="mtitle" style="margin-bottom:2px">${title||`${ags.length} Agent${ags.length>1?'s/Skills':'/Skill'}`}</div>
+    <div style="font-size:11px;color:var(--mu);margin-bottom:10px">${title?`${ags.length} agent/skill`:(ags[0]?.team||'')}</div>
+    <div class="msec">Details</div>${agh}`;
+  document.getElementById('modal').classList.add('open');
+}
+
+function drawOutCard(){
+  const out = visAgents().filter(a => {
+    const d = parseDate(a.launch);
+    return !d || !TL_MS.some(m => d >= m.start && d <= m.end);
+  });
+  const noDate = out.filter(a => !parseDate(a.launch));
+  const lateDate = out.filter(a => {
+    const d = parseDate(a.launch);
+    return d && !TL_MS.some(m => d >= m.start && d <= m.end);
+  });
+  const teams = uniq(out.map(a => a.team));
+  const agN = out.filter(a=>a.type==='agent').length;
+  const skN = out.filter(a=>a.type==='skill').length;
+  const sel = tlFilter==='out';
+
+  document.getElementById('tl-out-card').innerHTML = `
+    <div onclick="tlFilter=tlFilter==='out'?null:'out';drawTL();drawMsCards();drawOutCard()"
+      style="background:${sel?'#fffbf0':'#fffbf0'};border:${sel?'2px solid #d97706':'1.5px solid #fde68a'};border-top:3px solid #d97706;
+      border-radius:9px;padding:12px 16px;box-shadow:${sel?'0 0 0 2px #d9770640,var(--sh)':'var(--sh)'};cursor:pointer;transition:all .18s">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:15px;font-weight:700;color:#d97706">⚠ Out of Milestone</span>
+        <span style="font-size:9.5px;color:var(--mu)">Agent/Skill ที่ไม่อยู่ใน M1–M4</span>
+        ${sel?`<span style="font-size:9px;background:#d97706;color:#fff;padding:1px 7px;border-radius:10px;font-weight:700">Active</span>`:''}
+        <div style="margin-left:auto;display:flex;gap:10px">
+          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#d97706">${out.length}</div><div style="font-size:8.5px;color:var(--mu)">Total</div></div>
+          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--ag)">${agN}</div><div style="font-size:8.5px;color:var(--mu)">Agent</div></div>
+          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--sk)">${skN}</div><div style="font-size:8.5px;color:var(--mu)">Skill</div></div>
+          ${noDate.length?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--mu)">${noDate.length}</div><div style="font-size:8.5px;color:var(--mu)">No date</div></div>`:''}
+          ${lateDate.length?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#dc2626">${lateDate.length}</div><div style="font-size:8.5px;color:var(--mu)">Outside range</div></div>`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${teams.map(t=>`<span style="font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:600;background:#d9770618;color:#d97706;border:1px solid #d9770640">${t}</span>`).join('')}
+        ${!out.length?`<span style="font-size:11px;color:var(--mu)">✓ ทุก Agent/Skill อยู่ใน milestone แล้ว</span>`:''}
+      </div>
+      <div style="font-size:8.5px;color:var(--mu);margin-top:6px;text-align:center">${sel?'Click to clear filter':'Click to filter timeline'}</div>
+    </div>`;
+}
+
+function drawMsCards(){
+  document.getElementById('tl-ms-cards').innerHTML=TL_MS.map(m=>{
+    const inM=visAgents().filter(a=>{const d=parseDate(a.launch);return d&&d>=m.start&&d<=m.end;});
+    const teams=uniq(inM.map(a=>a.team));
+    const bySt={done:0,ontime:0,risk:0,delay:0,notstart:0};
+    inM.forEach(a=>{const s=tlStatus(a);bySt[s]=(bySt[s]||0)+1;});
+    const agN=inM.filter(a=>a.type==='agent').length,skN=inM.filter(a=>a.type==='skill').length;
+    const sS=m.start.toLocaleDateString('en-GB',{day:'numeric',month:'short'}),eS=m.end.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const sel=tlFilter===m.id;
+    return `<div onclick="tlFilter=tlFilter==='${m.id}'?null:'${m.id}';drawTL();drawMsCards()" style="background:var(--sf);border-radius:9px;padding:12px 14px;cursor:pointer;transition:all .18s;border:${sel?`2px solid ${m.color}`:'1.5px solid var(--bd)'};border-top:3px solid ${m.color};${sel?`background:${m.color}0c;box-shadow:0 0 0 2px ${m.color}40,var(--sh);`:'box-shadow:var(--sh);'}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:16px;font-weight:700;color:${m.color}">${m.id}</span>
+        ${sel?`<span style="font-size:9px;background:${m.color};color:#fff;padding:1px 7px;border-radius:10px;font-weight:700">Active</span>`:''}
+        <span style="font-size:9px;color:var(--mu);margin-left:auto">${sS}–${eS}</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${m.color}">${inM.length}</div><div style="font-size:8.5px;color:var(--mu)">Total</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--ag)">${agN}</div><div style="font-size:8.5px;color:var(--mu)">Agent</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--sk)">${skN}</div><div style="font-size:8.5px;color:var(--mu)">Skill</div></div>
+        ${(bySt.ontime||0)+(bySt.done||0)?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#15803d">${(bySt.ontime||0)+(bySt.done||0)}</div><div style="font-size:8.5px;color:var(--mu)">OK</div></div>`:''}
+        ${bySt.risk?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#d97706">${bySt.risk}</div><div style="font-size:8.5px;color:var(--mu)">Risk</div></div>`:''}
+        ${bySt.delay?`<div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#dc2626">${bySt.delay}</div><div style="font-size:8.5px;color:var(--mu)">Late</div></div>`:''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${teams.map(t=>`<span style="font-size:9.5px;padding:2px 7px;border-radius:4px;font-weight:600;background:${m.color}18;color:${m.color};border:1px solid ${m.color}40">${t}</span>`).join('')}
+        ${!teams.length?`<span style="font-size:9.5px;color:var(--mu2)">No items</span>`:''}
+      </div>
+      <div style="font-size:8.5px;color:var(--mu);margin-top:6px;text-align:center">${sel?'Click to clear':'Click to filter'}</div>
+    </div>`;
+  }).join('');
+}
+
+function showToast(msg,t='i'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast ${t}`;el.style.opacity='1';setTimeout(()=>{el.style.opacity='0';},3500);}
+
+
+// ── AI ADOPTION PAGE ──
+// Process list & order is grounded in the "Sheet3" reference (Group/Stage/Process/Use Case columns),
+// read top-to-bottom per stage. Each stage renders as ONE flat vertical list (lane), matching the
+// reference exactly. Header labels (top dark band + colored sub-band) are unchanged from before.
+const ADOPT_GROUPS=[
+  {label:'Discovery',color:'#1a2e50',sub:[
+    {label:'INITIATION',color:'#1558b0',bg:'#1558b020',stage:'Initiation',procs:[
+      {id:'1.1',name:'Feasibility Study'},{id:'1.2',name:'Deep Research & Benchmark'},
+      {id:'1.3',name:'Proposal and TOR'},{id:'1.4',name:'Legal & Compliance'},
+      {id:'1.5',name:'Requirement Exploration'},{id:'1.6',name:'Project Initiation & Resource Planning'},
+    ]},
+    {label:'DISCOVERY',color:'#1558b0',bg:'#1558b020',stage:'Discovery',procs:[
+      {id:'2.1',name:'Requirement Gathering'},{id:'2.2',name:'High-level User Story Development'},
+    ]},
+  ]},
+  {label:'Development',color:'#1a2e50',sub:[
+    {label:'DESIGN',color:'#6d28d9',bg:'#6d28d915',stage:'Design',procs:[
+      {id:'3.1',name:'User Experience Research'},{id:'3.2',name:'User Journey Design'},
+      {id:'3.3',name:'User Interface Design (Low-fi)'},{id:'4.1',name:'High-level Design'},
+      {id:'4.2',name:'Effort Estimation'},{id:'5.1',name:'Data Insight & Analysis'},
+      {id:'Data Requirement Gathering',name:'Data Requirement Gathering'},{id:'DevOps',name:'DevOps'},
+    ]},
+    {label:'BUILD',color:'#0b7a68',bg:'#0b7a6815',stage:'Build',procs:[
+      {id:'6.1',name:'Ideation & Planning'},{id:'6.2',name:'Project Governance'},
+      {id:'7.1',name:'Detailed User Story Development'},{id:'7.2',name:'Development Support'},
+      {id:'7.3',name:'Test Support'},{id:'7.4',name:'Deployment Support'},
+      {id:'8.1',name:'User Interface Design (Hi-fi)'},{id:'8.2',name:'Copywriting'},
+      {id:'9.1',name:'Detailed Design'},
+      {id:'10.1',name:'Development'},{id:'10.2',name:'Unit Test'},
+      {id:'10.3',name:'Code Review'},{id:'10.4',name:'Test Support'},
+      {id:'NFR Gathering',name:'NFR Gathering'},{id:'Performance Test Scripting',name:'Performance Test Scripting'},
+      {id:'Penetration Test Scenario Development',name:'Penetration Test Scenario Development'},
+      {id:'Penetration Test Execution',name:'Penetration Test Execution'},
+      {id:'Environment Provisioning',name:'Environment Provisioning'},
+      {id:'CI/CD Pipeline Development',name:'CI/CD Pipeline Development'},
+      {id:'Data Development',name:'Data Development'},{id:'Data Test Support',name:'Data Test Support'},
+    ]},
+    {label:'TEST',color:'#92400e',bg:'#92400e12',stage:'Test',procs:[
+      {id:'11.1',name:'Test Approach'},{id:'11.2',name:'Test Case Development'},
+      {id:'11.3',name:'Defect Management'},{id:'12.1',name:'SIT Test Data Preparation'},
+      {id:'12.2',name:'SIT Test Execution'},{id:'13.1',name:'UAT Test Data Preparation'},
+      {id:'13.2',name:'UAT Test Execution'},
+    ]},
+    {label:'DEPLOYMENT',color:'#991b1b',bg:'#991b1b12',stage:'Deployment',procs:[
+      {id:'14.1',name:'Runbook Development'},{id:'14.2A',name:'IVT Test Case Development'},
+      {id:'14.2B',name:'PVT Test Case Development'},{id:'14.3A',name:'IVT Test Case Execution'},
+      {id:'14.3B',name:'PVT Test Case Execution'},{id:'14.4',name:'CAB Document & Presentation'},
+    ]},
+  ]},
+  {label:'After Development',color:'#1a2e50',merged:true,sub:[
+    {label:'POST DEVELOPMENT',color:'#9d174d',bg:'#9d174d12',stage:'Post Development',procs:[
+      {id:'Incident Management',name:'Incident Management'},{id:'Problem Management',name:'Problem Management'},
+      {id:'E2E Monitoring',name:'E2E Monitoring'},{id:'Capacity Planning',name:'Capacity Planning'},
+      {id:'FinOps',name:'FinOps'},{id:'Capacity Monitoring',name:'Capacity Monitoring'},
+      {id:'Self Repairing',name:'Self Repairing'},
+    ]},
+  ]},
+];
+
+function getAgentStatuses(procId){
+  const ags=visAgents().filter(a=>hasProcessId(a,procId));
+  const statuses={ns:0,td:0,ip:0,pilot:0,ru:0};
+  ags.forEach(a=>{statuses[agentStatus(a)]++;});
+  return statuses;
+}
+
+function adoptStatus(procId){
+  const ags=visAgents().filter(a=>hasProcessId(a,procId));
+  if(!ags.length) return 'ns';
+  if(ags.some(a=>agentStatus(a)==='ru')) return 'ru';
+  if(ags.some(a=>agentStatus(a)==='pilot')) return 'pilot';
+  if(ags.some(a=>agentStatus(a)==='ip')) return 'ip';
+  if(ags.some(a=>agentStatus(a)==='td')) return 'td';
+  return 'ns';
+}
+
+function renderAdopt(){
+  buildCtrlAdopt();
+  updateStats();
+  const board=document.getElementById('adopt-board');
+  const ucEl=document.getElementById('main-adopt-uc');
+  const titleTxt=document.getElementById('adopt-title-txt');
+  const titleSub=document.getElementById('adopt-title-sub');
+  if(!board) return;
+
+  // Shared status legend: count agents/skills (scoped to search) by unified status
+  renderStatusLegend('adopt-status-legend',visAgents());
+
+  // ── SDLC ON → Usecase view (card grid like the old Agent Library SDLC view) ──
+  if(vSDLC){
+    board.style.display='none';
+    ucEl.style.display='';
+    if(titleTxt) titleTxt.textContent='SDLC Use Case Coverage';
+    if(titleSub) titleSub.textContent=vAdoptView==='by-process'?'Use cases grouped by SDLC process':'Use cases grouped by SDLC stage';
+    if(!UCS.length){const tmp=AGENTS;loadFallback();AGENTS=tmp;}
+    ucEl.innerHTML=renderByDim(vAdoptView==='by-process'?'process':'stage')||'<div style="text-align:center;padding:50px;color:var(--mu)">No data matching filters</div>';
+    return;
+  }
+
+  // ── SDLC OFF → Process board (default) ──
+  board.style.display='';
+  ucEl.style.display='none';
+  if(titleTxt) titleTxt.textContent='SDLC Process Overview';
+  if(titleSub) titleSub.textContent='AI Adoption status across SDLC processes';
+
+  // Render board
+  // Renders a single process card's HTML (and tells caller whether it was hidden by Has-agent filter)
+  function renderProcCard(proc){
+    const ags=visAgents().filter(a=>hasProcessId(a,proc.id));
+    if(vHasAgent&&!ags.length) return '';
+    const statuses=getAgentStatuses(proc.id);
+
+    const statusArray=[
+      {status:'ru',count:statuses.ru,label:'Ready'},
+      {status:'pilot',count:statuses.pilot,label:'Pilot'},
+      {status:'ip',count:statuses.ip,label:'In Progress'},
+      {status:'td',count:statuses.td,label:'To Do'},
+      {status:'ns',count:statuses.ns,label:'Not Start'}
+    ];
+    const dominant=statusArray.reduce((a,b)=>a.count>b.count?a:b);
+    const dominantStatus=dominant.count>0?dominant.status:'ns';
+    const empty=!ags.length;
+
+    // Accent bar: ONLY when dominant status is exactly 'ns' (Not Start) but the card actually has
+    // agents (some of which are further along). Bar is always a fixed dark-gray — it signals
+    // "this card isn't really empty" without implying a specific status color.
+    // Cards with NO agents at all stay fully plain (no accent).
+    const hasProgress=!empty&&dominantStatus==='ns';
+    const cardClass=`${dominantStatus}${hasProgress?' has-progress':''}${empty?' empty':''}`;
+
+    const breakdown=statusArray.filter(s=>s.count>0).map(s=>`${s.count} ${s.label}`).join(', ');
+    const icon={ns:'○',td:'◦',ip:'●',pilot:'◆',ru:'✓'};
+
+    return `<div class="aproc ${cardClass}" onclick="adoptClick('${proc.id}','${esc(proc.name)}')">
+      <div class="aproc-num">${proc.id}</div>
+      <div class="aproc-name">${proc.name}</div>
+      <div class="aproc-count">${empty?'<span style="color:#9ca3af">No agents</span>':icon[dominantStatus]+' '+breakdown}</div>
+    </div>`;
+  }
+
+  board.innerHTML=ADOPT_GROUPS.map(grp=>{
+    const grpCols=grp.sub.length;
+    const subcols=grp.sub.map(sub=>{
+      const cards=sub.procs.map(renderProcCard).join('');
+      if(vHasAgent&&!cards.trim()) return ''; // whole subcolumn empty after filter
+      const subHdr = grp.merged
+        ? `<div class="adopt-grp-hdr" style="min-height:70.5px;display:flex;align-items:center;justify-content:center;writing-mode:horizontal-tb">${sub.label}</div>`
+        : `<div class="adopt-sub-hdr" style="background:${sub.bg};color:${sub.color};border-bottom:2px solid ${sub.color}40">${sub.label}</div>`;
+      return `<div class="adopt-subcol" style="flex:1;min-width:120px">
+        ${subHdr}
+        <div class="adopt-cards">${cards}</div>
+      </div>`;
+    }).join('');
+    if(vHasAgent&&!subcols.trim()) return '';
+    if(grp.merged){
+      return `<div class="adopt-grp" style="flex:${grpCols}">
+        <div class="adopt-sub-row" style="flex:1">${subcols}</div>
+      </div>`;
+    }
+    return `<div class="adopt-grp" style="flex:${grpCols}">
+      <div class="adopt-grp-hdr">${grp.label}</div>
+      <div class="adopt-sub-row">${subcols}</div>
+    </div>`;
+  }).join('');
+}
+
+function adoptClick(procId,procName){
+  const ags=visAgents().filter(a=>hasProcessId(a,procId));
+  if(!ags.length){showToast(`No ${vSearch?'matching ':''}agents for ${procId} ${procName}`,'i');return;}
+  openAgentsModal(ags,null,`${procId} — ${procName}`,false);
+}
+function openAgentDetail(name,showUC=true){
+  const a=AGENTS.find(x=>x.name===name);
+  if(!a) return;
+  openAgentsModal([a],a.launch,a.name,showUC);
+}
+
+loadData();
+</script>
+</body>
+</html>
